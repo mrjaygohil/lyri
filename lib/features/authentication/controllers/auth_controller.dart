@@ -1,0 +1,176 @@
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/localization/locale_keys.dart';
+import '../../../core/services/supabase_service.dart';
+import '../../../core/utils/logger.dart';
+import '../../../routes/app_routes.dart';
+import '../models/profile_model.dart';
+import '../repositories/auth_repository.dart';
+
+class AuthController extends GetxController {
+  final AuthRepository _authRepository = Get.find<AuthRepository>();
+  final SupabaseService _supabaseService = Get.find<SupabaseService>();
+
+  final Rxn<User> rxUser = Rxn<User>();
+  final Rxn<ProfileModel> rxProfile = Rxn<ProfileModel>();
+  final RxBool isLoading = false.obs;
+  
+  StreamSubscription<AuthState>? _authSubscription;
+
+  User? get user => rxUser.value;
+  ProfileModel? get profile => rxProfile.value;
+  bool get isAuthenticated => user != null && profile != null && profile!.role == 'admin';
+
+  @override
+  void onInit() {
+    super.onInit();
+    _checkInitialSession();
+    _listenToAuthChanges();
+  }
+
+  @override
+  void onClose() {
+    _authSubscription?.cancel();
+    super.onClose();
+  }
+
+  void _checkInitialSession() async {
+    if (!_supabaseService.isInitialized.value) return;
+
+    try {
+      final Session? session = _supabaseService.client.auth.currentSession;
+      if (session != null && session.user != null) {
+        rxUser.value = session.user;
+        await _loadProfileAndNavigate(session.user!.id);
+      }
+    } catch (e, stackTrace) {
+      AppLogger.e('Failed to restore session: $e', stackTrace: stackTrace);
+    }
+  }
+
+  void _listenToAuthChanges() {
+    if (!_supabaseService.isInitialized.value) return;
+
+    _authSubscription = _supabaseService.client.auth.onAuthStateChange.listen((AuthState data) async {
+      final Session? session = data.session;
+      AppLogger.i('Auth event received: ${data.event}');
+
+      if (session != null && session.user != null) {
+        rxUser.value = session.user;
+        // User logged in or session refreshed
+        if (rxProfile.value == null || rxProfile.value!.id != session.user!.id) {
+          await _loadProfileAndNavigate(session.user!.id);
+        }
+      } else {
+        // User logged out
+        rxUser.value = null;
+        rxProfile.value = null;
+        if (Get.currentRoute != AppRoutes.login) {
+          Get.offAllNamed(AppRoutes.login);
+        }
+      }
+    });
+  }
+
+  Future<void> _loadProfileAndNavigate(String userId) async {
+    try {
+      isLoading.value = true;
+      final ProfileModel? userProfile = await _authRepository.getUserProfile(userId);
+      
+      if (userProfile == null) {
+        throw Exception('User profile not found. Access denied.');
+      }
+
+      if (userProfile.role != 'admin') {
+        Get.snackbar(
+          LocaleKeys.errorOccurred.tr,
+          'Access Denied: You are not authorized to access the Admin Panel.',
+          backgroundColor: Colors.redAccent.withOpacity(0.9),
+          colorText: Colors.white,
+        );
+        await signOut();
+        return;
+      }
+
+      rxProfile.value = userProfile;
+      isLoading.value = false;
+
+      // Navigate to dashboard if currently on login
+      if (Get.currentRoute == AppRoutes.login || Get.currentRoute == '/') {
+        Get.offAllNamed(AppRoutes.dashboard);
+      }
+    } catch (e, stackTrace) {
+      AppLogger.e('Failed loading profile: $e', stackTrace: stackTrace);
+      isLoading.value = false;
+      await signOut();
+    }
+  }
+
+  // Sign In Action
+  Future<void> login(String email, String password) async {
+    if (!_supabaseService.isInitialized.value) {
+      Get.snackbar(
+        LocaleKeys.errorOccurred.tr,
+        'Supabase is not configured yet. Check supabase_constants.dart',
+        backgroundColor: Colors.amber.shade900,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    try {
+      isLoading.value = true;
+      await _authRepository.signIn(email, password);
+      // Auth listener will handle loading profile and navigation
+    } catch (e) {
+      isLoading.value = false;
+      Get.snackbar(
+        LocaleKeys.errorOccurred.tr,
+        e.toString().replaceAll('Exception: ', ''),
+        backgroundColor: Colors.redAccent.withOpacity(0.9),
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
+
+  // Reset password
+  Future<void> sendForgotPasswordEmail(String email) async {
+    try {
+      isLoading.value = true;
+      await _authRepository.sendPasswordReset(email);
+      isLoading.value = false;
+      Get.snackbar(
+        LocaleKeys.success.tr,
+        'Password reset link sent to your email.',
+        backgroundColor: Colors.green.shade700,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      isLoading.value = false;
+      Get.snackbar(
+        LocaleKeys.errorOccurred.tr,
+        e.toString().replaceAll('Exception: ', ''),
+        backgroundColor: Colors.redAccent.withOpacity(0.9),
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  // Sign Out Action
+  Future<void> signOut() async {
+    try {
+      isLoading.value = true;
+      await _authRepository.signOut();
+      rxUser.value = null;
+      rxProfile.value = null;
+      isLoading.value = false;
+      Get.offAllNamed(AppRoutes.login);
+    } catch (e) {
+      isLoading.value = false;
+      AppLogger.e('Error during logout: $e');
+    }
+  }
+}
