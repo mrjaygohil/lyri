@@ -80,4 +80,42 @@ class AuthRepository {
       rethrow;
     }
   }
+
+  // Sign up with email & password
+  Future<User?> signUp(String email, String password, String fullName) async {
+    try {
+      if (!_supabaseService.isInitialized.value) {
+        throw Exception('Supabase not initialized');
+      }
+      final AuthResponse response = await _client.auth.signUp(
+        email: email,
+        password: password,
+        data: {'full_name': fullName, 'role': 'user'},
+      );
+      AppLogger.i('Sign-up successful for: $email');
+      return response.user;
+    } catch (e, stackTrace) {
+      AppLogger.e('Sign-up failed: $e', stackTrace: stackTrace);
+      rethrow;
+    }
+  }
+
+  // Sign in with Google IdToken
+  Future<User?> signInWithGoogle(String idToken, {String? accessToken}) async {
+    try {
+      if (!_supabaseService.isInitialized.value) {
+        throw Exception('Supabase not initialized');
+      }
+      final AuthResponse response = await _client.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: idToken,
+        accessToken: accessToken,
+      );
+      AppLogger.i('Google sign-in successful.');
+      return response.user;
+    } catch (e, stackTrace) {
+      AppLogger.e('Google sign-in failed: $e', stackTrace: stackTrace);
+      rethrow;
+    }
+  }
 }

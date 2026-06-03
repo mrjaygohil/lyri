@@ -11,6 +11,9 @@ import '../../tags/models/tag_model.dart';
 import '../../tags/repositories/tags_repository.dart';
 import '../models/song_model.dart';
 import '../repositories/songs_repository.dart';
+import '../../authentication/controllers/auth_controller.dart';
+import '../../home/controllers/home_controller.dart';
+import '../../../core/utils/search_helper.dart';
 
 class SongsController extends GetxController {
   final SongsRepository _songsRepository = Get.find<SongsRepository>();
@@ -64,11 +67,28 @@ class SongsController extends GetxController {
     try {
       isLoading.value = true;
       final list = await _songsRepository.getSongs(
-        searchQuery: searchQuery.value,
         categoryId: selectedCategoryFilter.value,
         statusFilter: selectedStatusFilter.value,
       );
-      songs.assignAll(list);
+
+      final searchVal = searchQuery.value.trim();
+      if (searchVal.isNotEmpty) {
+        final scoredResults = <MapEntry<SongModel, int>>[];
+        for (final song in list) {
+          final score = SearchHelper.calculateSongMatchScore(song, searchVal);
+          if (score > 0) {
+            scoredResults.add(MapEntry(song, score));
+          }
+        }
+        scoredResults.sort((a, b) {
+          final scoreCompare = b.value.compareTo(a.value);
+          if (scoreCompare != 0) return scoreCompare;
+          return a.key.title.compareTo(b.key.title);
+        });
+        songs.assignAll(scoredResults.map((e) => e.key).toList());
+      } else {
+        songs.assignAll(list);
+      }
     } catch (e) {
       Get.snackbar(
         LocaleKeys.errorOccurred.tr,
@@ -137,6 +157,7 @@ class SongsController extends GetxController {
     String? categoryId,
     required List<String> tagIds,
     required bool status,
+    String visibility = 'public',
     SongModel? existingSong,
   }) async {
     if (title.trim().isEmpty || lyrics.trim().isEmpty) {
@@ -161,6 +182,14 @@ class SongsController extends GetxController {
         isUploading.value = false;
       }
 
+      final currentUser = _supabaseService.client.auth.currentUser;
+      // Dynamically determine approval status based on role
+      final String userRole = _supabaseService.client.auth.currentSession != null
+          ? (Get.isRegistered<AuthController>() 
+              ? (Get.find<AuthController>().profile?.role ?? 'user')
+              : 'user')
+          : 'user';
+
       final Map<String, dynamic> songData = {
         'title': title.trim(),
         'lyrics': lyrics.trim(),
@@ -170,6 +199,11 @@ class SongsController extends GetxController {
         'category_id': categoryId,
         'thumbnail': imageUrl,
         'status': status,
+        'visibility': visibility,
+        'approval_status': isEdit 
+            ? existingSong.approvalStatus 
+            : (userRole == 'admin' ? 'approved' : 'pending'),
+        'created_by': isEdit ? existingSong.createdBy : currentUser?.id,
       };
 
       if (isEdit) {
@@ -184,8 +218,17 @@ class SongsController extends GetxController {
       } else {
         final newSong = await _songsRepository.createSong(songData, tagIds);
         songs.insert(0, newSong);
-        Get.back(); // return to list view
-        Get.snackbar(LocaleKeys.success.tr, 'Song added successfully.',
+        
+        if (Get.isRegistered<HomeController>() && Get.find<HomeController>().tabIndex.value == 2) {
+          Get.find<HomeController>().changeTab(4); // Redirect to Profile tab to see uploaded songs
+        } else {
+          Get.back(); // return to list view
+        }
+        
+        Get.snackbar(LocaleKeys.success.tr, 
+            userRole == 'admin' 
+                ? 'Song added successfully.' 
+                : 'Song submitted successfully and is pending moderator review.',
             backgroundColor: Colors.green, colorText: Colors.white);
       }
       clearSelectedImage();

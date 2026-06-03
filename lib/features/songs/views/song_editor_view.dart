@@ -27,13 +27,15 @@ class _SongEditorViewState extends State<SongEditorView> {
   String? _selectedCategoryId;
   final RxList<String> _selectedTagIds = <String>[].obs;
   final RxBool _status = true.obs;
+  final RxString _visibility = 'public'.obs;
 
-  SongModel? get _song => widget.song ?? (Get.arguments is SongModel ? Get.arguments as SongModel : null);
+  SongModel? _song;
   bool get _isEdit => _song != null;
 
   @override
   void initState() {
     super.initState();
+    _song = widget.song ?? (Get.arguments is SongModel ? Get.arguments as SongModel : null);
     final song = _song;
     _titleController = TextEditingController(text: song?.title);
     _lyricsController = TextEditingController(text: song?.lyrics);
@@ -43,6 +45,7 @@ class _SongEditorViewState extends State<SongEditorView> {
 
     _selectedCategoryId = song?.categoryId;
     _status.value = song?.status ?? true;
+    _visibility.value = song?.visibility ?? 'public';
 
     // Load existing tags
     final existingTags = song?.tags;
@@ -88,6 +91,7 @@ class _SongEditorViewState extends State<SongEditorView> {
         categoryId: _selectedCategoryId,
         tagIds: _selectedTagIds,
         status: _status.value,
+        visibility: _visibility.value,
         existingSong: _song,
       );
     }
@@ -98,15 +102,17 @@ class _SongEditorViewState extends State<SongEditorView> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final size = MediaQuery.of(context).size;
-    final isMobile = size.width < 950;
+    final isMobile = size.width < 750;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEdit ? LocaleKeys.editSong.tr : LocaleKeys.addSong.tr),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Get.back(),
-        ),
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Get.back(),
+              )
+            : null,
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(isMobile ? 16 : 24),
@@ -357,7 +363,22 @@ class _SongEditorViewState extends State<SongEditorView> {
                           contentPadding: EdgeInsets.zero,
                         );
                       }),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
+                      Obx(() => DropdownButtonFormField<String>(
+                            dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+                            value: _visibility.value,
+                            decoration: const InputDecoration(
+                              labelText: 'Visibility',
+                            ),
+                            items: const [
+                              DropdownMenuItem(value: 'public', child: Text('Public')),
+                              DropdownMenuItem(value: 'private', child: Text('Private')),
+                            ],
+                            onChanged: (val) {
+                              if (val != null) _visibility.value = val;
+                            },
+                          )),
+                      const SizedBox(height: 24),
                       Obx(() {
                         final isSaving = _controller.isLoading.value || _controller.isUploading.value;
                         return SizedBox(

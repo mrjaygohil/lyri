@@ -613,7 +613,7 @@ dependencies:
   flutter:
     sdk: flutter
 
-  flutter_riverpod:
+ 
   supabase_flutter:
   go_router:
   flutter_screenutil:

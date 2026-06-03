@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../../../core/localization/locale_keys.dart';
 import '../../../core/services/supabase_service.dart';
 import '../../../core/utils/logger.dart';
@@ -21,7 +22,7 @@ class AuthController extends GetxController {
 
   User? get user => rxUser.value;
   ProfileModel? get profile => rxProfile.value;
-  bool get isAuthenticated => user != null && profile != null && profile!.role == 'admin';
+  bool get isAuthenticated => user != null && profile != null && !profile!.isBanned;
 
   @override
   void onInit() {
@@ -83,10 +84,10 @@ class AuthController extends GetxController {
         throw Exception('User profile not found. Access denied.');
       }
 
-      if (userProfile.role != 'admin') {
+      if (userProfile.isBanned) {
         Get.snackbar(
           LocaleKeys.errorOccurred.tr,
-          'Access Denied: You are not authorized to access the Admin Panel.',
+          'Access Denied: Your account has been suspended.',
           backgroundColor: Colors.redAccent.withOpacity(0.9),
           colorText: Colors.white,
         );
@@ -97,9 +98,13 @@ class AuthController extends GetxController {
       rxProfile.value = userProfile;
       isLoading.value = false;
 
-      // Navigate to dashboard if currently on login
-      if (Get.currentRoute == AppRoutes.login || Get.currentRoute == '/') {
-        Get.offAllNamed(AppRoutes.dashboard);
+      // Navigate based on role if currently on login or root
+      if (Get.currentRoute == AppRoutes.login || Get.currentRoute == '/' || Get.currentRoute.isEmpty) {
+        if (userProfile.role == 'admin') {
+          Get.offAllNamed(AppRoutes.dashboard);
+        } else {
+          Get.offAllNamed(AppRoutes.userHome);
+        }
       }
     } catch (e, stackTrace) {
       AppLogger.e('Failed loading profile: $e', stackTrace: stackTrace);
@@ -124,6 +129,70 @@ class AuthController extends GetxController {
       isLoading.value = true;
       await _authRepository.signIn(email, password);
       // Auth listener will handle loading profile and navigation
+    } catch (e) {
+      isLoading.value = false;
+      Get.snackbar(
+        LocaleKeys.errorOccurred.tr,
+        e.toString().replaceAll('Exception: ', ''),
+        backgroundColor: Colors.redAccent.withOpacity(0.9),
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
+
+  // Sign Up Action
+  Future<void> register(String email, String password, String fullName) async {
+    if (!_supabaseService.isInitialized.value) return;
+
+    try {
+      isLoading.value = true;
+      await _authRepository.signUp(email, password, fullName);
+      isLoading.value = false;
+      
+      Get.snackbar(
+        LocaleKeys.success.tr,
+        'Account created successfully. You can now log in.',
+        backgroundColor: Colors.green.shade700,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      isLoading.value = false;
+      Get.snackbar(
+        LocaleKeys.errorOccurred.tr,
+        e.toString().replaceAll('Exception: ', ''),
+        backgroundColor: Colors.redAccent.withOpacity(0.9),
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
+
+  // Google Sign In Action
+  Future<void> loginWithGoogle() async {
+    if (!_supabaseService.isInitialized.value) return;
+
+    try {
+      isLoading.value = true;
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        scopes: ['email', 'profile'],
+      );
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+      
+      if (googleUser == null) {
+        isLoading.value = false;
+        return; // User cancelled
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final String? idToken = googleAuth.idToken;
+
+      if (idToken == null) {
+        throw Exception('Google sign-in succeeded but returned no identity token.');
+      }
+
+      await _authRepository.signInWithGoogle(idToken, accessToken: googleAuth.accessToken);
     } catch (e) {
       isLoading.value = false;
       Get.snackbar(

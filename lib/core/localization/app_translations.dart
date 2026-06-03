@@ -5,7 +5,7 @@ class AppTranslations extends Translations {
   @override
   Map<String, Map<String, String>> get keys => {
         'en_US': {
-          LocaleKeys.appName: 'Lyri Admin',
+          LocaleKeys.appName: 'Lyri',
           LocaleKeys.login: 'Login',
           LocaleKeys.logout: 'Logout',
           LocaleKeys.email: 'Email',

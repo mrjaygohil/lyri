@@ -248,5 +248,158 @@ create policy "Allow admin full access on song_tags" on public.song_tags
 --   insert into public.profiles (id, full_name, email, role)
 --   values (new_user_id, 'Admin User', admin_email, 'admin')
 --   on conflict (id) do update set role = 'admin', full_name = 'Admin User', email = admin_email;
--- end $$;
+-- -------------------------------------------------------------------------
+-- MOBILE APP DATABASE EXTENSIONS
+-- -------------------------------------------------------------------------
+
+-- 1. Extend profiles table with avatar, provider and banned state
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS avatar text;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS auth_provider text DEFAULT 'email';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_banned boolean DEFAULT false;
+
+-- 2. Extend songs table for visibility, moderation, ownership and stats
+ALTER TABLE public.songs ADD COLUMN IF NOT EXISTS visibility text NOT NULL DEFAULT 'public' CHECK (visibility IN ('public', 'private'));
+ALTER TABLE public.songs ADD COLUMN IF NOT EXISTS approval_status text NOT NULL DEFAULT 'approved' CHECK (approval_status IN ('pending', 'approved', 'rejected'));
+ALTER TABLE public.songs ADD COLUMN IF NOT EXISTS created_by uuid REFERENCES public.profiles(id) ON DELETE SET NULL;
+ALTER TABLE public.songs ADD COLUMN IF NOT EXISTS approved_by uuid REFERENCES public.profiles(id) ON DELETE SET NULL;
+ALTER TABLE public.songs ADD COLUMN IF NOT EXISTS views_count integer DEFAULT 0 NOT NULL;
+ALTER TABLE public.songs ADD COLUMN IF NOT EXISTS likes_count integer DEFAULT 0 NOT NULL;
+
+-- 3. Create Playlists Table
+CREATE TABLE IF NOT EXISTS public.playlists (
+    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    title text NOT NULL,
+    description text,
+    cover_image text,
+    visibility text NOT NULL DEFAULT 'public' CHECK (visibility IN ('public', 'private')),
+    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Enable RLS for playlists
+ALTER TABLE public.playlists ENABLE ROW LEVEL SECURITY;
+
+-- Playlists RLS Policies
+CREATE POLICY "Allow public read access to public playlists" ON public.playlists
+    FOR SELECT USING (visibility = 'public');
+
+CREATE POLICY "Allow users access to their own playlists" ON public.playlists
+    FOR ALL USING (auth.uid() = user_id);
+
+-- 4. Create Playlist Songs Junction Table with custom order
+CREATE TABLE IF NOT EXISTS public.playlist_songs (
+    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    playlist_id uuid REFERENCES public.playlists(id) ON DELETE CASCADE NOT NULL,
+    song_id uuid REFERENCES public.songs(id) ON DELETE CASCADE NOT NULL,
+    order_no integer NOT NULL,
+    UNIQUE(playlist_id, song_id)
+);
+
+-- Enable RLS for playlist_songs
+ALTER TABLE public.playlist_songs ENABLE ROW LEVEL SECURITY;
+
+-- Playlist Songs RLS Policies
+CREATE POLICY "Allow public read access to playlist songs" ON public.playlist_songs
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM public.playlists 
+            WHERE id = playlist_songs.playlist_id AND (visibility = 'public' OR user_id = auth.uid())
+        )
+    );
+
+CREATE POLICY "Allow users to modify songs in their own playlists" ON public.playlist_songs
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM public.playlists
+            WHERE id = playlist_songs.playlist_id AND user_id = auth.uid()
+        )
+    );
+
+-- 5. Create Favorites Table
+CREATE TABLE IF NOT EXISTS public.favorites (
+    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+    song_id uuid REFERENCES public.songs(id) ON DELETE CASCADE NOT NULL,
+    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    UNIQUE(user_id, song_id)
+);
+
+-- Enable RLS for favorites
+ALTER TABLE public.favorites ENABLE ROW LEVEL SECURITY;
+
+-- Favorites RLS Policies
+CREATE POLICY "Allow users to view their own favorites" ON public.favorites
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Allow users to manage their own favorites" ON public.favorites
+    FOR ALL USING (auth.uid() = user_id);
+
+-- Update trigger function handle_new_user to capture metadata and create profile correctly
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger as $$
+DECLARE
+  assigned_role text;
+  full_name text;
+  avatar_url text;
+  provider_name text;
+BEGIN
+  assigned_role := coalesce(new.raw_user_meta_data->>'role', 'user');
+  IF assigned_role NOT IN ('admin', 'user') THEN
+    assigned_role := 'user';
+  END IF;
+
+  full_name := coalesce(
+    new.raw_user_meta_data->>'full_name',
+    new.raw_user_meta_data->>'name',
+    split_part(new.email, '@', 1)
+  );
+
+  avatar_url := coalesce(
+    new.raw_user_meta_data->>'avatar_url',
+    new.raw_user_meta_data->>'picture',
+    ''
+  );
+
+  provider_name := coalesce(
+    new.raw_app_meta_data->>'provider',
+    'email'
+  );
+
+  INSERT INTO public.profiles (id, full_name, email, role, avatar, auth_provider, is_banned)
+  VALUES (
+    new.id,
+    full_name,
+    new.email,
+    assigned_role,
+    avatar_url,
+    provider_name,
+    false
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    full_name = EXCLUDED.full_name,
+    email = EXCLUDED.email,
+    avatar = COALESCE(profiles.avatar, EXCLUDED.avatar),
+    auth_provider = EXCLUDED.auth_provider;
+
+  RETURN new;
+END;
+$$ language plpgsql security definer;
+
+-- Update Songs RLS to allow pending/private states and user uploads
+DROP POLICY IF EXISTS "Allow public read access to active songs" ON public.songs;
+CREATE POLICY "Allow public read access to active songs" ON public.songs
+    FOR SELECT USING (status = true AND visibility = 'public' AND approval_status = 'approved');
+
+CREATE POLICY "Allow users to view their own songs regardless of status" ON public.songs
+    FOR SELECT USING (auth.uid() = created_by);
+
+CREATE POLICY "Allow users to insert their own songs" ON public.songs
+    FOR INSERT WITH CHECK (auth.uid() = created_by);
+
+CREATE POLICY "Allow users to update their own songs" ON public.songs
+    FOR UPDATE USING (auth.uid() = created_by) WITH CHECK (auth.uid() = created_by);
+
+CREATE POLICY "Allow users to delete their own songs" ON public.songs
+    FOR DELETE USING (auth.uid() = created_by);
+
 

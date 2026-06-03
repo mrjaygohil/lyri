@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'core/localization/app_translations.dart';
 import 'core/services/supabase_service.dart';
@@ -20,24 +21,31 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GetMaterialApp(
-      title: 'Lyri Admin Panel',
-      debugShowCheckedModeBanner: false,
-      
-      // Theme settings
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.dark, // Default to dark premium aesthetics
+    return ScreenUtilInit(
+      designSize: const Size(375, 812),
+      minTextAdapt: true,
+      splitScreenMode: true,
+      builder: (context, child) {
+        return GetMaterialApp(
+          title: 'Lyri Lyrics Platform',
+          debugShowCheckedModeBanner: false,
+          
+          // Theme settings
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: ThemeMode.dark, // Default to dark premium aesthetics
 
-      // Routing settings
-      initialRoute: AppRoutes.login,
-      getPages: AppRoutes.pages,
-      initialBinding: AuthBinding(), // Instantiate Auth session immediately
+          // Routing settings
+          initialRoute: AppRoutes.login,
+          getPages: AppRoutes.pages,
+          initialBinding: AuthBinding(), // Instantiate Auth session immediately
 
-      // Localization settings
-      translations: AppTranslations(),
-      locale: const Locale('en', 'US'),
-      fallbackLocale: const Locale('en', 'US'),
+          // Localization settings
+          translations: AppTranslations(),
+          locale: const Locale('en', 'US'),
+          fallbackLocale: const Locale('en', 'US'),
+        );
+      },
     );
   }
 }

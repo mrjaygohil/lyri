@@ -13,6 +13,14 @@ class SongModel {
   final bool status;
   final DateTime createdAt;
 
+  // New Mobile Fields
+  final String visibility;
+  final String approvalStatus;
+  final String? createdBy;
+  final String? approvedBy;
+  final int viewsCount;
+  final int likesCount;
+
   // Joined relations
   final CategoryModel? category;
   final List<TagModel>? tags;
@@ -28,6 +36,12 @@ class SongModel {
     this.thumbnail,
     required this.status,
     required this.createdAt,
+    this.visibility = 'public',
+    this.approvalStatus = 'approved',
+    this.createdBy,
+    this.approvedBy,
+    this.viewsCount = 0,
+    this.likesCount = 0,
     this.category,
     this.tags,
   });
@@ -70,6 +84,12 @@ class SongModel {
       createdAt: json['created_at'] != null 
           ? DateTime.parse(json['created_at'] as String) 
           : DateTime.now(),
+      visibility: (json['visibility'] ?? 'public') as String,
+      approvalStatus: (json['approval_status'] ?? 'approved') as String,
+      createdBy: json['created_by'] as String?,
+      approvedBy: json['approved_by'] as String?,
+      viewsCount: (json['views_count'] ?? 0) as int,
+      likesCount: (json['likes_count'] ?? 0) as int,
       category: categoryObj,
       tags: tagsList,
     );
@@ -87,6 +107,12 @@ class SongModel {
       'thumbnail': thumbnail,
       'status': status,
       'created_at': createdAt.toIso8601String(),
+      'visibility': visibility,
+      'approval_status': approvalStatus,
+      'created_by': createdBy,
+      'approved_by': approvedBy,
+      'views_count': viewsCount,
+      'likes_count': likesCount,
     };
   }
 
@@ -101,6 +127,12 @@ class SongModel {
     String? thumbnail,
     bool? status,
     DateTime? createdAt,
+    String? visibility,
+    String? approvalStatus,
+    String? createdBy,
+    String? approvedBy,
+    int? viewsCount,
+    int? likesCount,
     CategoryModel? category,
     List<TagModel>? tags,
   }) {
@@ -115,6 +147,12 @@ class SongModel {
       thumbnail: thumbnail ?? this.thumbnail,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
+      visibility: visibility ?? this.visibility,
+      approvalStatus: approvalStatus ?? this.approvalStatus,
+      createdBy: createdBy ?? this.createdBy,
+      approvedBy: approvedBy ?? this.approvedBy,
+      viewsCount: viewsCount ?? this.viewsCount,
+      likesCount: likesCount ?? this.likesCount,
       category: category ?? this.category,
       tags: tags ?? this.tags,
     );

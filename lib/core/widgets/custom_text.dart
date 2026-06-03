@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 
@@ -36,14 +37,18 @@ class CustomText extends StatelessWidget {
             ? (isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary)
             : (isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary));
 
+    final double? scaledFontSize = fontSize != null
+        ? (MediaQuery.of(context).size.width >= 600 ? fontSize : fontSize!.sp)
+        : null;
+
     final baseStyle = useOutfit
         ? GoogleFonts.outfit(
-            fontSize: fontSize,
+            fontSize: scaledFontSize,
             fontWeight: fontWeight,
             color: defaultColor,
           )
         : GoogleFonts.inter(
-            fontSize: fontSize,
+            fontSize: scaledFontSize,
             fontWeight: fontWeight,
             color: defaultColor,
           );
