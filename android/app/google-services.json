@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "358451101596",
+    "project_id": "lyri-8d380",
+    "storage_bucket": "lyri-8d380.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:358451101596:android:a4be106b7c2ea2b7295259",
+        "android_client_info": {
+          "package_name": "com.example.lyri_web"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCdRang_mL26dZ21d8LiAcNZMadQhkVmdI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
