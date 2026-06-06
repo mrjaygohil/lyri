@@ -11,7 +11,13 @@ import 'routes/app_routes.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  } catch (e) {
+    debugPrint('Firebase initialization skipped or failed: $e');
+  }
+  
   // Initialize SupabaseService asynchronously before starting the application
   await Get.putAsync<SupabaseService>(() => SupabaseService().init());
 
