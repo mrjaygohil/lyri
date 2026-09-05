@@ -109,7 +109,7 @@ class AuthRepository {
       }
       final bool res = await _client.auth.signInWithOAuth(
         OAuthProvider.google,
-        redirectTo: kIsWeb ? Uri.base.origin : null,
+        redirectTo: kIsWeb ? Uri.base.toString() : null,
       );
       AppLogger.i('Google OAuth flow launched successfully.');
       return res;
