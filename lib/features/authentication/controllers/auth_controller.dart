@@ -178,8 +178,27 @@ class AuthController extends GetxController {
     try {
       isLoading.value = true;
       if (kIsWeb) {
-        // On Web, use Supabase OAuth redirect flow
-        await _authRepository.signInWithGoogleOAuth();
+        if (SupabaseConstants.googleWebClientId.isNotEmpty) {
+          // In-page Google Sign In Popup on Web using Web Client ID
+          final GoogleSignIn googleSignIn = GoogleSignIn(
+            clientId: SupabaseConstants.googleWebClientId,
+            scopes: ['email', 'profile'],
+          );
+          final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+          if (googleUser == null) {
+            isLoading.value = false;
+            return;
+          }
+          final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+          final String? idToken = googleAuth.idToken;
+          if (idToken == null) {
+            throw Exception('Google sign-in succeeded but returned no identity token.');
+          }
+          await _authRepository.signInWithGoogle(idToken, accessToken: googleAuth.accessToken);
+        } else {
+          // Supabase OAuth redirect flow
+          await _authRepository.signInWithGoogleOAuth();
+        }
         isLoading.value = false;
       } else {
         final GoogleSignIn googleSignIn = GoogleSignIn(
@@ -203,12 +222,17 @@ class AuthController extends GetxController {
       }
     } catch (e) {
       isLoading.value = false;
+      String errorMsg = ErrorHandler.formatError(e);
+      if (errorMsg.contains('provider is not enabled') || e.toString().contains('provider is not enabled')) {
+        errorMsg = 'Google login is not enabled in your Supabase Dashboard.\nPlease enable Google Provider under Authentication > Providers in Supabase.';
+      }
       Get.snackbar(
         LocaleKeys.errorOccurred.tr,
-        ErrorHandler.formatError(e),
+        errorMsg,
         backgroundColor: Colors.redAccent.withOpacity(0.9),
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 6),
       );
     }
   }

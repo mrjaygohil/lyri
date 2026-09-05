@@ -3,6 +3,9 @@ class SupabaseConstants {
   static const String supabaseUrl = 'https://bmnpdupwokjlhbpeelog.supabase.co';
   static const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtbnBkdXB3b2tqbGhicGVlbG9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MjM2NDQsImV4cCI6MjA5NTA5OTY0NH0.k6ACSTa50aWyy0sULBL9E564KEvN-MNfzqcXyWPaZKw';
 
+  // Optional: Set Web Client ID if using Google Sign In popup natively on Web
+  static const String googleWebClientId = '358451101596-rgdpp3goe851og8bcs8r62k1f0j469of.apps.googleusercontent.com';
+
   // Table Names
   static const String tableProfiles = 'profiles';
   static const String tableCategories = 'categories';
