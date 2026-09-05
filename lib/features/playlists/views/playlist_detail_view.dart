@@ -74,11 +74,22 @@ class _PlaylistDetailViewState extends State<PlaylistDetailView> {
                 Icon(Icons.music_note_outlined, size: 64, color: Colors.grey[600]),
                 const SizedBox(height: 16),
                 const CustomText('No songs in this playlist yet', isSecondary: true),
-                const SizedBox(height: 8),
-                CustomText(
-                  'Tap the + icon in the top right to add songs',
-                  fontSize: 13,
-                  color: Colors.grey[400],
+                const SizedBox(height: 20),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Get.toNamed(AppRoutes.search, arguments: {'playlist': playlist});
+                  },
+                  icon: const Icon(Icons.add, size: 20),
+                  label: const Text(
+                    'Add Songs to Playlist',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF6366F1),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                 ),
               ],
             ),
@@ -153,12 +164,13 @@ class _PlaylistDetailViewState extends State<PlaylistDetailView> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
-                      onPressed: () {
-                        controller.removeSongFromPlaylist(playlist.id, song.id);
-                      },
-                    ),
+                    // trailing: IconButton(
+                    //   padding: EdgeInsets.all(19)
+                    //   icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
+                    //   onPressed: () {
+                    //     controller.removeSongFromPlaylist(playlist.id, song.id);
+                    //   },
+                    // ),
                   ),
                 );
               },
@@ -166,7 +178,22 @@ class _PlaylistDetailViewState extends State<PlaylistDetailView> {
           ),
         );
       }),
-);
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          final playlist = controller.playlists.firstWhere(
+            (p) => p.id == initialPlaylist.id,
+            orElse: () => initialPlaylist,
+          );
+          Get.toNamed(AppRoutes.search, arguments: {'playlist': playlist});
+        },
+        backgroundColor: const Color(0xFF6366F1),
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text(
+          'Add Songs',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
   }
 }
 
