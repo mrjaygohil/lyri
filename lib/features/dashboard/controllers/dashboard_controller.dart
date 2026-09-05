@@ -13,6 +13,7 @@ class DashboardController extends GetxController {
   final RxInt totalSongs = 0.obs;
   final RxInt totalCategories = 0.obs;
   final RxInt totalTags = 0.obs;
+  final RxInt totalRaags = 0.obs;
   final RxInt totalUsers = 0.obs;
   
   final RxList<SongModel> recentSongs = <SongModel>[].obs;
@@ -36,6 +37,7 @@ class DashboardController extends GetxController {
         _getTableCount(SupabaseConstants.tableSongs),
         _getTableCount(SupabaseConstants.tableCategories),
         _getTableCount(SupabaseConstants.tableTags),
+        _getTableCount(SupabaseConstants.tableRaags),
         _getTableCount(SupabaseConstants.tableProfiles),
         _loadRecentSongs(),
       ]);
@@ -43,8 +45,9 @@ class DashboardController extends GetxController {
       totalSongs.value = results[0] as int;
       totalCategories.value = results[1] as int;
       totalTags.value = results[2] as int;
-      totalUsers.value = results[3] as int;
-      recentSongs.assignAll(results[4] as List<SongModel>);
+      totalRaags.value = results[3] as int;
+      totalUsers.value = results[4] as int;
+      recentSongs.assignAll(results[5] as List<SongModel>);
 
       AppLogger.i('Dashboard data loaded successfully.');
     } catch (e, stackTrace) {

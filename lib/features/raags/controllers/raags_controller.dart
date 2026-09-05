@@ -2,26 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/localization/locale_keys.dart';
 import '../../../core/utils/error_handler.dart';
-import '../models/tag_model.dart';
-import '../repositories/tags_repository.dart';
+import '../models/raag_model.dart';
+import '../repositories/raags_repository.dart';
 
-class TagsController extends GetxController {
-  final TagsRepository _tagsRepository = Get.find<TagsRepository>();
+class RaagsController extends GetxController {
+  final RaagsRepository _raagsRepository = Get.find<RaagsRepository>();
 
-  final RxList<TagModel> tags = <TagModel>[].obs;
+  final RxList<RaagModel> raags = <RaagModel>[].obs;
   final RxBool isLoading = false.obs;
 
   @override
   void onInit() {
     super.onInit();
-    loadTags();
+    loadRaags();
   }
 
-  Future<void> loadTags() async {
+  Future<void> loadRaags() async {
     try {
       isLoading.value = true;
-      final list = await _tagsRepository.getTags();
-      tags.assignAll(list);
+      final list = await _raagsRepository.getRaags();
+      raags.assignAll(list);
     } catch (e) {
       Get.snackbar(
         LocaleKeys.errorOccurred.tr,
@@ -34,15 +34,15 @@ class TagsController extends GetxController {
     }
   }
 
-  Future<void> addTag(String name) async {
+  Future<void> addRaag(String name) async {
     if (name.trim().isEmpty) return;
     
     final nameTrimmed = name.trim();
-    final exists = tags.any((tag) => tag.name.trim().toLowerCase() == nameTrimmed.toLowerCase());
+    final exists = raags.any((r) => r.name.trim().toLowerCase() == nameTrimmed.toLowerCase());
     if (exists) {
       Get.snackbar(
         LocaleKeys.errorOccurred.tr,
-        'Tag with this name already exists.',
+        'Raag with this name already exists.',
         backgroundColor: Colors.redAccent,
         colorText: Colors.white,
       );
@@ -51,11 +51,11 @@ class TagsController extends GetxController {
 
     try {
       isLoading.value = true;
-      final newTag = await _tagsRepository.createTag(nameTrimmed);
-      tags.add(newTag);
-      tags.sort((a, b) => a.name.compareTo(b.name));
+      final newRaag = await _raagsRepository.createRaag(nameTrimmed);
+      raags.add(newRaag);
+      raags.sort((a, b) => a.name.compareTo(b.name));
       Get.back(); // close dialog
-      Get.snackbar(LocaleKeys.success.tr, 'Tag added successfully.',
+      Get.snackbar(LocaleKeys.success.tr, 'Raag added successfully.',
           backgroundColor: Colors.green, colorText: Colors.white);
     } catch (e) {
       Get.snackbar(
@@ -69,15 +69,15 @@ class TagsController extends GetxController {
     }
   }
 
-  Future<void> editTag(String id, String name) async {
+  Future<void> editRaag(String id, String name) async {
     if (name.trim().isEmpty) return;
     
     final nameTrimmed = name.trim();
-    final exists = tags.any((tag) => tag.id != id && tag.name.trim().toLowerCase() == nameTrimmed.toLowerCase());
+    final exists = raags.any((r) => r.id != id && r.name.trim().toLowerCase() == nameTrimmed.toLowerCase());
     if (exists) {
       Get.snackbar(
         LocaleKeys.errorOccurred.tr,
-        'Tag with this name already exists.',
+        'Raag with this name already exists.',
         backgroundColor: Colors.redAccent,
         colorText: Colors.white,
       );
@@ -86,14 +86,14 @@ class TagsController extends GetxController {
 
     try {
       isLoading.value = true;
-      final updated = await _tagsRepository.updateTag(id, nameTrimmed);
-      final index = tags.indexWhere((t) => t.id == id);
+      final updated = await _raagsRepository.updateRaag(id, nameTrimmed);
+      final index = raags.indexWhere((r) => r.id == id);
       if (index != -1) {
-        tags[index] = updated;
-        tags.sort((a, b) => a.name.compareTo(b.name));
+        raags[index] = updated;
+        raags.sort((a, b) => a.name.compareTo(b.name));
       }
       Get.back(); // close dialog
-      Get.snackbar(LocaleKeys.success.tr, 'Tag updated successfully.',
+      Get.snackbar(LocaleKeys.success.tr, 'Raag updated successfully.',
           backgroundColor: Colors.green, colorText: Colors.white);
     } catch (e) {
       Get.snackbar(
@@ -107,12 +107,12 @@ class TagsController extends GetxController {
     }
   }
 
-  Future<void> deleteTag(String id) async {
+  Future<void> deleteRaag(String id) async {
     try {
       isLoading.value = true;
-      await _tagsRepository.deleteTag(id);
-      tags.removeWhere((t) => t.id == id);
-      Get.snackbar(LocaleKeys.success.tr, 'Tag deleted successfully.',
+      await _raagsRepository.deleteRaag(id);
+      raags.removeWhere((r) => r.id == id);
+      Get.snackbar(LocaleKeys.success.tr, 'Raag deleted successfully.',
           backgroundColor: Colors.green, colorText: Colors.white);
     } catch (e) {
       Get.snackbar(

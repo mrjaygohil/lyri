@@ -37,6 +37,16 @@ create table public.tags (
 -- Enable RLS for tags
 alter table public.tags enable row level security;
 
+-- Create Raags Table
+create table public.raags (
+    id uuid default gen_random_uuid() primary key,
+    name text not null unique,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Enable RLS for raags
+alter table public.raags enable row level security;
+
 -- 4. Create Songs Table
 create table public.songs (
     id uuid default gen_random_uuid() primary key,
@@ -64,6 +74,17 @@ create table public.song_tags (
 
 -- Enable RLS for song_tags
 alter table public.song_tags enable row level security;
+
+-- Create Song Raags Junction Table
+create table public.song_raags (
+    id uuid default gen_random_uuid() primary key,
+    song_id uuid references public.songs(id) on delete cascade not null,
+    raag_id uuid references public.raags(id) on delete cascade not null,
+    unique(song_id, raag_id)
+);
+
+-- Enable RLS for song_raags
+alter table public.song_raags enable row level security;
 
 
 -- =========================================================================
@@ -143,7 +164,21 @@ create policy "Allow admin full access on categories" on public.categories
 create policy "Allow public read access to tags" on public.tags
     for select using (true);
 
+create policy "Allow authenticated users to insert tags" on public.tags
+    for insert with check (auth.role() = 'authenticated');
+
 create policy "Allow admin full access on tags" on public.tags
+    for all using (public.is_admin());
+
+
+-- Raags Policies
+create policy "Allow public read access to raags" on public.raags
+    for select using (true);
+
+create policy "Allow authenticated users to insert raags" on public.raags
+    for insert with check (auth.role() = 'authenticated');
+
+create policy "Allow admin full access on raags" on public.raags
     for all using (public.is_admin());
 
 
@@ -159,7 +194,31 @@ create policy "Allow admin full access on songs" on public.songs
 create policy "Allow public read access to song_tags" on public.song_tags
     for select using (true);
 
+create policy "Allow users to manage song_tags for their own songs" on public.song_tags
+    for all using (
+        exists (
+            select 1 from public.songs
+            where id = song_tags.song_id and created_by = auth.uid()
+        )
+    );
+
 create policy "Allow admin full access on song_tags" on public.song_tags
+    for all using (public.is_admin());
+
+
+-- Song Raags Policies
+create policy "Allow public read access to song_raags" on public.song_raags
+    for select using (true);
+
+create policy "Allow users to manage song_raags for their own songs" on public.song_raags
+    for all using (
+        exists (
+            select 1 from public.songs
+            where id = song_raags.song_id and created_by = auth.uid()
+        )
+    );
+
+create policy "Allow admin full access on song_raags" on public.song_raags
     for all using (public.is_admin());
 
 

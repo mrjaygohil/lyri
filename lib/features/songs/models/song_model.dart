@@ -1,5 +1,6 @@
 import '../../categories/models/category_model.dart';
 import '../../tags/models/tag_model.dart';
+import '../../raags/models/raag_model.dart';
 
 class SongModel {
   final String id;
@@ -24,6 +25,7 @@ class SongModel {
   // Joined relations
   final CategoryModel? category;
   final List<TagModel>? tags;
+  final List<RaagModel>? raags;
 
   const SongModel({
     required this.id,
@@ -44,6 +46,7 @@ class SongModel {
     this.likesCount = 0,
     this.category,
     this.tags,
+    this.raags,
   });
 
   factory SongModel.fromJson(Map<String, dynamic> json) {
@@ -71,6 +74,24 @@ class SongModel {
       tagsList = tagsJson.map((t) => TagModel.fromJson(t as Map<String, dynamic>)).toList();
     }
 
+    // Parse nested raags from many-to-many relationship
+    List<RaagModel>? raagsList;
+    if (json['song_raags'] != null) {
+      final List<dynamic> songRaagsJson = json['song_raags'] as List<dynamic>;
+      raagsList = songRaagsJson
+          .map((sr) {
+            if (sr['raags'] != null) {
+              return RaagModel.fromJson(sr['raags'] as Map<String, dynamic>);
+            }
+            return null;
+          })
+          .whereType<RaagModel>()
+          .toList();
+    } else if (json['raags'] != null) {
+      final List<dynamic> raagsJson = json['raags'] as List<dynamic>;
+      raagsList = raagsJson.map((r) => RaagModel.fromJson(r as Map<String, dynamic>)).toList();
+    }
+
     return SongModel(
       id: json['id'] as String,
       title: (json['title'] ?? '') as String,
@@ -92,6 +113,7 @@ class SongModel {
       likesCount: (json['likes_count'] ?? 0) as int,
       category: categoryObj,
       tags: tagsList,
+      raags: raagsList,
     );
   }
 
@@ -135,6 +157,7 @@ class SongModel {
     int? likesCount,
     CategoryModel? category,
     List<TagModel>? tags,
+    List<RaagModel>? raags,
   }) {
     return SongModel(
       id: id ?? this.id,
@@ -155,6 +178,7 @@ class SongModel {
       likesCount: likesCount ?? this.likesCount,
       category: category ?? this.category,
       tags: tags ?? this.tags,
+      raags: raags ?? this.raags,
     );
   }
 }

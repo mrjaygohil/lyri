@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../core/localization/locale_keys.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../routes/app_routes.dart';
+import '../../songs/controllers/songs_controller.dart';
 import '../controllers/dashboard_controller.dart';
 import '../widgets/dashboard_layout.dart';
 
@@ -23,8 +24,8 @@ class DashboardView extends GetView<DashboardController> {
         }
 
         // Determine grid configurations based on screen width
-        int crossAxisCount = 4;
-        double childAspectRatio = 1.6;
+        int crossAxisCount = 5;
+        double childAspectRatio = 1.4;
         if (size.width < 600) {
           crossAxisCount = 1;
           childAspectRatio = 2.2;
@@ -32,8 +33,8 @@ class DashboardView extends GetView<DashboardController> {
           crossAxisCount = 2;
           childAspectRatio = 1.8;
         } else if (size.width < 1200) {
-          crossAxisCount = 4;
-          childAspectRatio = 1.3;
+          crossAxisCount = 3;
+          childAspectRatio = 1.4;
         }
 
         final recentSongsCard = Card(
@@ -65,6 +66,9 @@ class DashboardView extends GetView<DashboardController> {
                     itemBuilder: (context, index) {
                       final song = controller.recentSongs[index];
                       return ListTile(
+                        onTap: () {
+                          Get.toNamed(AppRoutes.songDetail, arguments: song);
+                        },
                         contentPadding: EdgeInsets.zero,
                         leading: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
@@ -127,21 +131,33 @@ class DashboardView extends GetView<DashboardController> {
                   icon: Icons.music_video_outlined,
                   title: LocaleKeys.addSong.tr,
                   color: theme.primaryColor,
-                  onTap: () => Get.toNamed(AppRoutes.songs),
+                  onTap: () {
+                    if (Get.isRegistered<SongsController>()) {
+                      Get.find<SongsController>().clearSelectedImage();
+                    }
+                    Get.toNamed(AppRoutes.songEditor);
+                  },
                 ),
                 _buildActionItem(
                   context: context,
                   icon: Icons.category_outlined,
                   title: LocaleKeys.addCategory.tr,
                   color: Colors.green,
-                  onTap: () => Get.toNamed(AppRoutes.categories),
+                  onTap: () => Get.offAllNamed(AppRoutes.categories),
                 ),
                 _buildActionItem(
                   context: context,
                   icon: Icons.local_offer_outlined,
                   title: LocaleKeys.addTag.tr,
                   color: Colors.amber,
-                  onTap: () => Get.toNamed(AppRoutes.tags),
+                  onTap: () => Get.offAllNamed(AppRoutes.tags),
+                ),
+                _buildActionItem(
+                  context: context,
+                  icon: Icons.music_note_outlined,
+                  title: LocaleKeys.addRaag.tr,
+                  color: Colors.purple,
+                  onTap: () => Get.offAllNamed(AppRoutes.raags),
                 ),
               ],
             ),
@@ -201,6 +217,7 @@ class DashboardView extends GetView<DashboardController> {
                       value: '${controller.totalSongs.value}',
                       icon: Icons.music_note_outlined,
                       gradient: AppTheme.primaryGradient(context),
+                      onTap: () => Get.offAllNamed(AppRoutes.songs),
                     ),
                     _buildStatCard(
                       context: context,
@@ -212,6 +229,7 @@ class DashboardView extends GetView<DashboardController> {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
+                      onTap: () => Get.offAllNamed(AppRoutes.categories),
                     ),
                     _buildStatCard(
                       context: context,
@@ -223,6 +241,19 @@ class DashboardView extends GetView<DashboardController> {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
+                      onTap: () => Get.offAllNamed(AppRoutes.tags),
+                    ),
+                    _buildStatCard(
+                      context: context,
+                      title: LocaleKeys.totalRaags.tr,
+                      value: '${controller.totalRaags.value}',
+                      icon: Icons.music_note_outlined,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      onTap: () => Get.offAllNamed(AppRoutes.raags),
                     ),
                     _buildStatCard(
                       context: context,
@@ -234,6 +265,7 @@ class DashboardView extends GetView<DashboardController> {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
+                      onTap: () => Get.offAllNamed(AppRoutes.users),
                     ),
                   ],
                 ),
@@ -288,6 +320,7 @@ class DashboardView extends GetView<DashboardController> {
     required String value,
     required IconData icon,
     required Gradient gradient,
+    VoidCallback? onTap,
   }) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -295,7 +328,6 @@ class DashboardView extends GetView<DashboardController> {
     final isCompact = size.width < 500;
 
     return Container(
-      padding: EdgeInsets.all(isCompact ? 12 : 20),
       decoration: BoxDecoration(
         color: isDark ? AppTheme.darkCardBg : Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -303,47 +335,57 @@ class DashboardView extends GetView<DashboardController> {
           color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder,
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: EdgeInsets.all(isCompact ? 12 : 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontSize: isCompact ? 11 : 13,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          fontSize: isCompact ? 11 : 13,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        value,
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: isCompact ? 20 : 28,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: isCompact ? 20 : 28,
+                Container(
+                  padding: EdgeInsets.all(isCompact ? 10 : 14),
+                  decoration: BoxDecoration(
+                    gradient: gradient,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: Colors.white,
+                    size: isCompact ? 20 : 24,
                   ),
                 ),
               ],
             ),
           ),
-          Container(
-            padding: EdgeInsets.all(isCompact ? 10 : 14),
-            decoration: BoxDecoration(
-              gradient: gradient,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: isCompact ? 20 : 24,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

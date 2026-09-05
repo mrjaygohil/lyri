@@ -21,7 +21,7 @@ class SongsRepository {
 
       var query = _client
           .from(SupabaseConstants.tableSongs)
-          .select('*, categories(*), song_tags(tags(*))');
+          .select('*, categories(*), song_tags(tags(*)), song_raags(raags(*))');
 
       // Filter by category
       if (categoryId != null && categoryId.isNotEmpty) {
@@ -47,7 +47,7 @@ class SongsRepository {
   }
 
   // Create Song and insert tag relationships
-  Future<SongModel> createSong(Map<String, dynamic> songData, List<String> tagIds) async {
+  Future<SongModel> createSong(Map<String, dynamic> songData, List<String> tagIds, List<String> raagIds) async {
     try {
       // 1. Insert song record
       final songResponse = await _client
@@ -67,10 +67,19 @@ class SongsRepository {
         await _client.from(SupabaseConstants.tableSongTags).insert(junctionRows);
       }
 
+      // 2.5. Insert song-raag junctions
+      if (raagIds.isNotEmpty) {
+        final List<Map<String, dynamic>> junctionRows = raagIds
+            .map((raagId) => {'song_id': songId, 'raag_id': raagId})
+            .toList();
+
+        await _client.from(SupabaseConstants.tableSongRaags).insert(junctionRows);
+      }
+
       // 3. Fetch full song with relations
       final fullResponse = await _client
           .from(SupabaseConstants.tableSongs)
-          .select('*, categories(*), song_tags(tags(*))')
+          .select('*, categories(*), song_tags(tags(*)), song_raags(raags(*))')
           .eq('id', songId)
           .single();
 
@@ -83,7 +92,7 @@ class SongsRepository {
   }
 
   // Update Song and sync tag relationships
-  Future<SongModel> updateSong(String songId, Map<String, dynamic> songData, List<String> tagIds) async {
+  Future<SongModel> updateSong(String songId, Map<String, dynamic> songData, List<String> tagIds, List<String> raagIds) async {
     try {
       // 1. Update song record
       await _client
@@ -97,6 +106,12 @@ class SongsRepository {
           .delete()
           .eq('song_id', songId);
 
+      // 2.5 Clear old junction raags
+      await _client
+          .from(SupabaseConstants.tableSongRaags)
+          .delete()
+          .eq('song_id', songId);
+
       // 3. Insert new junction tags
       if (tagIds.isNotEmpty) {
         final List<Map<String, dynamic>> junctionRows = tagIds
@@ -106,10 +121,19 @@ class SongsRepository {
         await _client.from(SupabaseConstants.tableSongTags).insert(junctionRows);
       }
 
+      // 3.5 Insert new junction raags
+      if (raagIds.isNotEmpty) {
+        final List<Map<String, dynamic>> junctionRows = raagIds
+            .map((raagId) => {'song_id': songId, 'raag_id': raagId})
+            .toList();
+
+        await _client.from(SupabaseConstants.tableSongRaags).insert(junctionRows);
+      }
+
       // 4. Fetch full song with relations
       final fullResponse = await _client
           .from(SupabaseConstants.tableSongs)
-          .select('*, categories(*), song_tags(tags(*))')
+          .select('*, categories(*), song_tags(tags(*)), song_raags(raags(*))')
           .eq('id', songId)
           .single();
 
@@ -117,6 +141,27 @@ class SongsRepository {
       return SongModel.fromJson(fullResponse);
     } catch (e, stackTrace) {
       AppLogger.e('Failed to update song: $e', stackTrace: stackTrace);
+      rethrow;
+    }
+  }
+
+  // Update Song Approval Status (Approve or Decline)
+  Future<SongModel> updateSongApprovalStatus(String songId, String status, String adminUserId) async {
+    try {
+      final response = await _client
+          .from(SupabaseConstants.tableSongs)
+          .update({
+            'approval_status': status,
+            'approved_by': adminUserId,
+          })
+          .eq('id', songId)
+          .select('*, categories(*), song_tags(tags(*)), song_raags(raags(*))')
+          .single();
+
+      AppLogger.i('Song approval status updated to $status: $songId');
+      return SongModel.fromJson(response);
+    } catch (e, stackTrace) {
+      AppLogger.e('Failed to update song approval status: $e', stackTrace: stackTrace);
       rethrow;
     }
   }

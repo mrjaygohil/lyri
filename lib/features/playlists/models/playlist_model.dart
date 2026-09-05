@@ -27,6 +27,12 @@ class PlaylistModel {
     List<SongModel> songsList = [];
     if (json['playlist_songs'] != null) {
       final List<dynamic> psJson = json['playlist_songs'] as List<dynamic>;
+      // Sort by order_no to maintain user order
+      psJson.sort((a, b) {
+        final int aOrd = (a['order_no'] ?? 0) as int;
+        final int bOrd = (b['order_no'] ?? 0) as int;
+        return aOrd.compareTo(bOrd);
+      });
       songsList = psJson
           .map((item) {
             if (item['songs'] != null) {

@@ -186,6 +186,7 @@ class PlaylistsTabView extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Obx(() => DropdownButtonFormField<String>(
+                      isExpanded: true,
                       dropdownColor: const Color(0xFF1E293B),
                       value: visibility.value,
                       style: const TextStyle(color: Colors.white),

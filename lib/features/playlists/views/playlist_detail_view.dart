@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:lyri_web/features/songs/models/song_model.dart';
 import '../../../core/widgets/custom_widgets.dart';
 import '../../../routes/app_routes.dart';
 import '../controllers/playlists_controller.dart';
@@ -42,6 +43,21 @@ class _PlaylistDetailViewState extends State<PlaylistDetailView> {
           color: Colors.white,
           useOutfit: true,
         ),
+        actions: [
+          Obx(() {
+            final playlist = controller.playlists.firstWhere(
+              (p) => p.id == initialPlaylist.id,
+              orElse: () => initialPlaylist,
+            );
+            return IconButton(
+              icon: const Icon(Icons.add_circle_outline, color: Colors.greenAccent),
+              tooltip: 'Add Songs',
+              onPressed: () {
+                Get.toNamed(AppRoutes.search, arguments: {'playlist': playlist});
+              },
+            );
+          }),
+        ],
       ),
       body: Obx(() {
         // Find latest version of playlist from controller reactive state
@@ -60,7 +76,7 @@ class _PlaylistDetailViewState extends State<PlaylistDetailView> {
                 const CustomText('No songs in this playlist yet', isSecondary: true),
                 const SizedBox(height: 8),
                 CustomText(
-                  'Add songs from details page',
+                  'Tap the + icon in the top right to add songs',
                   fontSize: 13,
                   color: Colors.grey[400],
                 ),
@@ -72,66 +88,84 @@ class _PlaylistDetailViewState extends State<PlaylistDetailView> {
         return Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 800),
-            child: ListView.builder(
+            child: ReorderableListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: playlist.songs.length,
+              onReorder: (oldIndex, newIndex) {
+                if (newIndex > oldIndex) {
+                  newIndex -= 1;
+                }
+                final list = List<SongModel>.from(playlist.songs);
+                final item = list.removeAt(oldIndex);
+                list.insert(newIndex, item);
+                // Call controller to update DB order
+                controller.updatePlaylistSongsOrder(playlist.id, list.map((s) => s.id).toList());
+              },
               itemBuilder: (context, index) {
-            final song = playlist.songs[index];
-            return Card(
-              color: const Color(0xFF1E293B),
-              margin: const EdgeInsets.only(bottom: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                onTap: () => Get.toNamed(AppRoutes.songDetail, arguments: song),
-                leading: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: song.thumbnail != null && song.thumbnail!.isNotEmpty
-                      ? CachedNetworkImage(
-                          imageUrl: song.thumbnail!,
-                          width: 48,
-                          height: 48,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
-                            color: const Color(0xFF334155),
-                            child: const Icon(Icons.music_note, color: Colors.indigo),
-                          ),
-                        )
-                      : Container(
-                          width: 48,
-                          height: 48,
-                          color: const Color(0xFF334155),
-                          child: const Icon(Icons.music_note, color: Colors.indigo),
+                final song = playlist.songs[index];
+                return Card(
+                  key: ValueKey(song.id),
+                  color: const Color(0xFF1E293B),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    onTap: () => Get.toNamed(AppRoutes.songDetail, arguments: song),
+                    leading: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.drag_handle, color: Colors.grey, size: 20),
+                        const SizedBox(width: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: song.thumbnail != null && song.thumbnail!.isNotEmpty
+                              ? CachedNetworkImage(
+                                  imageUrl: song.thumbnail!,
+                                  width: 48,
+                                  height: 48,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => Container(
+                                    color: const Color(0xFF334155),
+                                    child: const Icon(Icons.music_note, color: Colors.indigo),
+                                  ),
+                                )
+                              : Container(
+                                  width: 48,
+                                  height: 48,
+                                  color: const Color(0xFF334155),
+                                  child: const Icon(Icons.music_note, color: Colors.indigo),
+                                ),
                         ),
-                ),
-                title: CustomText(
-                  song.title,
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                subtitle: CustomText(
-                  song.singerName ?? 'Unknown Artist',
-                  fontSize: 12,
-                  color: Colors.grey[400],
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
-                  onPressed: () {
-                    controller.removeSongFromPlaylist(playlist.id, song.id);
-                  },
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }),
+                      ],
+                    ),
+                    title: CustomText(
+                      song.title,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: CustomText(
+                      song.singerName ?? 'Unknown Artist',
+                      fontSize: 12,
+                      color: Colors.grey[400],
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
+                      onPressed: () {
+                        controller.removeSongFromPlaylist(playlist.id, song.id);
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      }),
 );
   }
 }

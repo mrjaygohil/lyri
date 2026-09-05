@@ -97,6 +97,32 @@ class SearchView extends StatelessWidget {
                         }).toList(),
                       ),
                     ],
+                    if (controller.raags.isNotEmpty) ...[
+                      const SizedBox(height: 32),
+                      const CustomText(
+                        'Explore by Raags',
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        useOutfit: true,
+                      ),
+                      const SizedBox(height: 16),
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 8,
+                        runSpacing: 10,
+                        children: controller.raags.map((raag) {
+                          return ActionChip(
+                            label: Text('#${raag.name}'),
+                            backgroundColor: const Color(0xFF1E293B),
+                            labelStyle: const TextStyle(color: Colors.white, fontSize: 13),
+                            side: BorderSide(color: Colors.purple.withOpacity(0.4)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            onPressed: () => controller.selectTag(raag.name),
+                          );
+                        }).toList(),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -180,7 +206,7 @@ class SearchView extends StatelessWidget {
                           const TextStyle(color: Color(0xFF8B5CF6), fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
-                        if (song.tags != null && song.tags!.isNotEmpty)
+                        if (song.tags != null && song.tags!.isNotEmpty) ...[
                           Wrap(
                             spacing: 4,
                             runSpacing: 4,
@@ -213,6 +239,42 @@ class SearchView extends StatelessWidget {
                               );
                             }).toList(),
                           ),
+                          const SizedBox(height: 6),
+                        ],
+                        if (song.raags != null && song.raags!.isNotEmpty) ...[
+                          Wrap(
+                            spacing: 4,
+                            runSpacing: 4,
+                            children: song.raags!.map((r) {
+                              final isMatch = r.name
+                                  .toLowerCase()
+                                  .contains(controller.query.value.toLowerCase().trim());
+                              return Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: isMatch
+                                      ? Colors.purple.withOpacity(0.2)
+                                      : const Color(0xFF0F172A),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(
+                                    color: isMatch
+                                        ? Colors.purple.withOpacity(0.4)
+                                        : Colors.grey.withOpacity(0.1),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Text(
+                                  '#${r.name}',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: isMatch ? FontWeight.bold : FontWeight.normal,
+                                    color: isMatch ? Colors.purpleAccent : Colors.grey[400],
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
                       ],
                     ),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),

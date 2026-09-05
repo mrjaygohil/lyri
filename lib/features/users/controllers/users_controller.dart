@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/localization/locale_keys.dart';
+import '../../../core/utils/error_handler.dart';
 import '../../authentication/models/profile_model.dart';
 import '../repositories/users_repository.dart';
 
@@ -24,7 +25,7 @@ class UsersController extends GetxController {
     } catch (e) {
       Get.snackbar(
         LocaleKeys.errorOccurred.tr,
-        e.toString().replaceAll('Exception: ', ''),
+        ErrorHandler.formatError(e),
         backgroundColor: Colors.redAccent,
         colorText: Colors.white,
       );
@@ -51,7 +52,7 @@ class UsersController extends GetxController {
     } catch (e) {
       Get.snackbar(
         LocaleKeys.errorOccurred.tr,
-        e.toString().replaceAll('Exception: ', ''),
+        ErrorHandler.formatError(e),
         backgroundColor: Colors.redAccent,
         colorText: Colors.white,
       );
@@ -70,7 +71,7 @@ class UsersController extends GetxController {
     } catch (e) {
       Get.snackbar(
         LocaleKeys.errorOccurred.tr,
-        e.toString().replaceAll('Exception: ', ''),
+        ErrorHandler.formatError(e),
         backgroundColor: Colors.redAccent,
         colorText: Colors.white,
       );

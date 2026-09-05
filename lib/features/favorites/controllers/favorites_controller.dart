@@ -28,7 +28,7 @@ class FavoritesController extends GetxController {
 
       final List<dynamic> response = await _client
           .from('favorites')
-          .select('songs(*, categories(*), song_tags(tags(*)))')
+          .select('songs(*, categories(*), song_tags(tags(*)), song_raags(raags(*)))')
           .eq('user_id', currentUser.id);
 
       final List<SongModel> songs = [];

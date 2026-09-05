@@ -27,7 +27,7 @@ class ProfileController extends GetxController {
 
       final List<dynamic> response = await _client
           .from('songs')
-          .select('*, categories(*), song_tags(tags(*))')
+          .select('*, categories(*), song_tags(tags(*)), song_raags(raags(*))')
           .eq('created_by', currentUser.id)
           .order('created_at', ascending: false);
 

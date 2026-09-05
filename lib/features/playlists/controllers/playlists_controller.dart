@@ -174,4 +174,26 @@ class PlaylistsController extends GetxController {
       AppLogger.e('Failed deleting playlist: $e', stackTrace: stackTrace);
     }
   }
+
+  // Update song ordering inside a playlist
+  Future<void> updatePlaylistSongsOrder(String playlistId, List<String> songIds) async {
+    try {
+      if (!_supabaseService.isInitialized.value) return;
+
+      final List<Future> updates = [];
+      for (int i = 0; i < songIds.length; i++) {
+        updates.add(
+          _client
+              .from('playlist_songs')
+              .update({'order_no': i})
+              .eq('playlist_id', playlistId)
+              .eq('song_id', songIds[i])
+        );
+      }
+      await Future.wait(updates);
+      await fetchPlaylists();
+    } catch (e, stackTrace) {
+      AppLogger.e('Failed to update playlist songs order: $e', stackTrace: stackTrace);
+    }
+  }
 }

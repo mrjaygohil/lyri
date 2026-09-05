@@ -139,6 +139,116 @@ class SongsListView extends GetView<SongsController> {
     );
   }
 
+  void _showMultiSelectDialog({
+    required BuildContext context,
+    required String title,
+    required List<dynamic> items,
+    required RxList<String> selectedIds,
+    required Function() onApply,
+  }) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final searchController = TextEditingController();
+        final RxList<String> tempSelected = RxList<String>.from(selectedIds);
+        final RxString query = ''.obs;
+
+        searchController.addListener(() {
+          query.value = searchController.text.trim();
+        });
+
+        return AlertDialog(
+          title: Text(title),
+          content: Container(
+            width: 400,
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.5,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: searchController,
+                  decoration: const InputDecoration(
+                    hintText: 'Search...',
+                    prefixIcon: Icon(Icons.search),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: Obx(() {
+                    final filteredItems = items.where((item) {
+                      final name = item.name.toString().toLowerCase();
+                      return name.contains(query.value.toLowerCase());
+                    }).toList();
+
+                    if (filteredItems.isEmpty) {
+                      return const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: Text('No matches found.'),
+                        ),
+                      );
+                    }
+
+                    return ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: filteredItems.length,
+                      itemBuilder: (context, index) {
+                        final item = filteredItems[index];
+                        final id = item.id as String;
+                        final name = item.name as String;
+                        
+                        return Obx(() {
+                          final isChecked = tempSelected.contains(id);
+                          return CheckboxListTile(
+                            title: Text(name),
+                            value: isChecked,
+                            onChanged: (bool? checked) {
+                              if (checked == true) {
+                                tempSelected.add(id);
+                              } else {
+                                tempSelected.remove(id);
+                              }
+                            },
+                            controlAffinity: ListTileControlAffinity.leading,
+                            contentPadding: EdgeInsets.zero,
+                          );
+                        });
+                      },
+                    );
+                  }),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                tempSelected.clear();
+              },
+              child: const Text('Clear All'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(LocaleKeys.cancel.tr),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                selectedIds.clear();
+                selectedIds.addAll(tempSelected);
+                onApply();
+                Navigator.pop(context);
+              },
+              child: const Text('Apply'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return DashboardLayout(
@@ -153,10 +263,10 @@ class SongsListView extends GetView<SongsController> {
               Builder(
                 builder: (context) {
                   final size = MediaQuery.of(context).size;
-                  final isMobile = size.width < 950;
+                  final isMobile = size.width < 1250;
 
                   final searchField = TextField(
-                    onChanged: (val) => controller.searchQuery.value = val,
+                    controller: controller.searchController,
                     decoration: InputDecoration(
                       hintText: '${LocaleKeys.search.tr} title or singer...',
                       prefixIcon: const Icon(Icons.search),
@@ -165,6 +275,7 @@ class SongsListView extends GetView<SongsController> {
 
                   final categoryFilter = Obx(() {
                     return DropdownButtonFormField<String>(
+                      isExpanded: true,
                       value: controller.selectedCategoryFilter.value,
                       decoration: InputDecoration(
                         hintText: LocaleKeys.selectCategory.tr,
@@ -188,6 +299,7 @@ class SongsListView extends GetView<SongsController> {
 
                   final statusFilter = Obx(() {
                     return DropdownButtonFormField<bool>(
+                      isExpanded: true,
                       value: controller.selectedStatusFilter.value,
                       decoration: const InputDecoration(
                         hintText: 'Status',
@@ -211,24 +323,81 @@ class SongsListView extends GetView<SongsController> {
                     );
                   });
 
-                  final actionButtons = Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.filter_alt_off_outlined),
-                        tooltip: 'Reset Filters',
-                        onPressed: controller.resetFilters,
+                  final tagFilter = Obx(() {
+                    final selectedCount = controller.selectedTagFilters.length;
+                    String label = 'All Tags';
+                    if (selectedCount == 1) {
+                      final tagId = controller.selectedTagFilters.first;
+                      final matchIndex = controller.tags.indexWhere((t) => t.id == tagId);
+                      label = matchIndex != -1 ? controller.tags[matchIndex].name : 'Unknown';
+                    } else if (selectedCount > 1) {
+                      label = 'Tags ($selectedCount selected)';
+                    }
+
+                    return InkWell(
+                      onTap: () {
+                        _showMultiSelectDialog(
+                          context: context,
+                          title: 'Select Tags',
+                          items: controller.tags,
+                          selectedIds: controller.selectedTagFilters,
+                          onApply: controller.loadSongs,
+                        );
+                      },
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          hintText: 'Tag',
+                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          suffixIcon: Icon(Icons.arrow_drop_down),
+                        ),
+                        child: Text(
+                          label,
+                          style: TextStyle(
+                            color: selectedCount > 0 ? null : Colors.grey.shade600,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                       ),
-                      const Spacer(),
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          controller.clearSelectedImage();
-                          Get.toNamed(AppRoutes.songEditor);
-                        },
-                        icon: const Icon(Icons.add),
-                        label: Text(LocaleKeys.addSong.tr),
+                    );
+                  });
+
+                  final raagFilter = Obx(() {
+                    final selectedCount = controller.selectedRaagFilters.length;
+                    String label = 'All Raags';
+                    if (selectedCount == 1) {
+                      final raagId = controller.selectedRaagFilters.first;
+                      final matchIndex = controller.raags.indexWhere((r) => r.id == raagId);
+                      label = matchIndex != -1 ? controller.raags[matchIndex].name : 'Unknown';
+                    } else if (selectedCount > 1) {
+                      label = 'Raags ($selectedCount selected)';
+                    }
+
+                    return InkWell(
+                      onTap: () {
+                        _showMultiSelectDialog(
+                          context: context,
+                          title: 'Select Raags',
+                          items: controller.raags,
+                          selectedIds: controller.selectedRaagFilters,
+                          onApply: controller.loadSongs,
+                        );
+                      },
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          hintText: 'Raag',
+                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          suffixIcon: Icon(Icons.arrow_drop_down),
+                        ),
+                        child: Text(
+                          label,
+                          style: TextStyle(
+                            color: selectedCount > 0 ? null : Colors.grey.shade600,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                       ),
-                    ],
-                  );
+                    );
+                  });
 
                   if (isMobile) {
                     return Column(
@@ -244,40 +413,73 @@ class SongsListView extends GetView<SongsController> {
                           ],
                         ),
                         const SizedBox(height: 12),
-                        actionButtons,
+                        Row(
+                          children: [
+                            Expanded(child: tagFilter),
+                            const SizedBox(width: 12),
+                            Expanded(child: raagFilter),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.filter_alt_off_outlined),
+                              tooltip: 'Reset Filters',
+                              onPressed: controller.resetFilters,
+                            ),
+                            const Spacer(),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                controller.clearSelectedImage();
+                                Get.toNamed(AppRoutes.songEditor);
+                              },
+                              icon: const Icon(Icons.add),
+                              label: Text(LocaleKeys.addSong.tr),
+                            ),
+                          ],
+                        ),
                       ],
                     );
                   }
 
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Expanded(
-                        flex: 2,
-                        child: searchField,
+                      Row(
+                        children: [
+                          Expanded(
+                            flex: 3,
+                            child: searchField,
+                          ),
+                          const SizedBox(width: 16),
+                          IconButton(
+                            icon: const Icon(Icons.filter_alt_off_outlined),
+                            tooltip: 'Reset Filters',
+                            onPressed: controller.resetFilters,
+                          ),
+                          const SizedBox(width: 16),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              controller.clearSelectedImage();
+                              Get.toNamed(AppRoutes.songEditor);
+                            },
+                            icon: const Icon(Icons.add),
+                            label: Text(LocaleKeys.addSong.tr),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: categoryFilter,
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: statusFilter,
-                      ),
-                      const SizedBox(width: 16),
-                      IconButton(
-                        icon: const Icon(Icons.filter_alt_off_outlined),
-                        tooltip: 'Reset Filters',
-                        onPressed: controller.resetFilters,
-                      ),
-                      const SizedBox(width: 16),
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          controller.clearSelectedImage();
-                          Get.toNamed(AppRoutes.songEditor);
-                        },
-                        icon: const Icon(Icons.add),
-                        label: Text(LocaleKeys.addSong.tr),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(child: categoryFilter),
+                          const SizedBox(width: 16),
+                          Expanded(child: statusFilter),
+                          const SizedBox(width: 16),
+                          Expanded(child: tagFilter),
+                          const SizedBox(width: 16),
+                          Expanded(child: raagFilter),
+                        ],
                       ),
                     ],
                   );
@@ -292,7 +494,11 @@ class SongsListView extends GetView<SongsController> {
                     return const Center(child: CircularProgressIndicator());
                   }
 
-                  if (controller.songs.isEmpty) {
+                  final approvedSongs = controller.songs
+                      .where((song) => song.approvalStatus == 'approved')
+                      .toList();
+
+                  if (approvedSongs.isEmpty) {
                     return const Center(child: Text('No songs found.'));
                   }
 
@@ -322,16 +528,20 @@ class SongsListView extends GetView<SongsController> {
                         size: ColumnSize.S,
                       ),
                       const DataColumn2(
+                        label: Text('Approval'),
+                        size: ColumnSize.S,
+                      ),
+                      const DataColumn2(
                         label: Text('Created'),
                         size: ColumnSize.M,
                       ),
                       const DataColumn2(
                         label: Text('Actions'),
-                        size: ColumnSize.S,
+                        fixedWidth: 200,
                         numeric: true,
                       ),
                     ],
-                    rows: controller.songs.map((song) {
+                    rows: approvedSongs.map((song) {
                       return DataRow(
                         cells: [
                           DataCell(
@@ -381,6 +591,31 @@ class SongsListView extends GetView<SongsController> {
                               ),
                             ),
                           ),
+                          DataCell(
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: song.approvalStatus == 'approved'
+                                    ? Colors.blue.withOpacity(0.1)
+                                    : song.approvalStatus == 'rejected'
+                                        ? Colors.red.withOpacity(0.1)
+                                        : Colors.orange.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                song.approvalStatus.capitalizeFirst!,
+                                style: TextStyle(
+                                  color: song.approvalStatus == 'approved'
+                                      ? Colors.blue
+                                      : song.approvalStatus == 'rejected'
+                                          ? Colors.red
+                                          : Colors.orange,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
                           DataCell(Text(
                             DateFormat('yyyy-MM-dd').format(song.createdAt.toLocal()),
                           )),
@@ -388,12 +623,36 @@ class SongsListView extends GetView<SongsController> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
+                                if (song.approvalStatus == 'pending') ...[
+                                  IconButton(
+                                    iconSize: 20,
+                                    padding: const EdgeInsets.all(8),
+                                    constraints: const BoxConstraints(),
+                                    icon: const Icon(Icons.check_circle_outline, color: Colors.green),
+                                    onPressed: () => controller.updateApprovalStatus(song.id, 'approved'),
+                                    tooltip: 'Approve Song',
+                                  ),
+                                  IconButton(
+                                    iconSize: 20,
+                                    padding: const EdgeInsets.all(8),
+                                    constraints: const BoxConstraints(),
+                                    icon: const Icon(Icons.cancel_outlined, color: Colors.redAccent),
+                                    onPressed: () => controller.updateApprovalStatus(song.id, 'rejected'),
+                                    tooltip: 'Decline Song',
+                                  ),
+                                ],
                                 IconButton(
+                                  iconSize: 20,
+                                  padding: const EdgeInsets.all(8),
+                                  constraints: const BoxConstraints(),
                                   icon: const Icon(Icons.visibility_outlined, color: Colors.green),
                                   onPressed: () => _showLyricsDialog(context, song),
                                   tooltip: 'View Lyrics',
                                 ),
                                 IconButton(
+                                  iconSize: 20,
+                                  padding: const EdgeInsets.all(8),
+                                  constraints: const BoxConstraints(),
                                   icon: const Icon(Icons.edit_outlined, color: Colors.blueAccent),
                                   onPressed: () {
                                     controller.clearSelectedImage();
@@ -402,6 +661,9 @@ class SongsListView extends GetView<SongsController> {
                                   tooltip: LocaleKeys.editSong.tr,
                                 ),
                                 IconButton(
+                                  iconSize: 20,
+                                  padding: const EdgeInsets.all(8),
+                                  constraints: const BoxConstraints(),
                                   icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
                                   onPressed: () => _confirmDelete(context, song),
                                   tooltip: LocaleKeys.deleteSong.tr,

@@ -15,10 +15,11 @@ class LoginView extends StatefulWidget {
 class _LoginViewState extends State<LoginView> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final _emailController = TextEditingController(text : "admin@lyri.com");
+  final _passwordController = TextEditingController(text:"Admin@123");
   final AuthController _authController = Get.find<AuthController>();
   final RxBool _isSignUp = false.obs;
+  final RxBool _obscurePassword = true.obs;
 
   @override
   void dispose() {
@@ -229,11 +230,20 @@ class _LoginViewState extends State<LoginView> {
                         ],
                       ),
                       Obx(() => SizedBox(height: _isSignUp.value ? 8 : 0)),
-                      CustomTextFormField(
+                      Obx(() => CustomTextFormField(
                         controller: _passwordController,
-                        obscureText: true,
+                        obscureText: _obscurePassword.value,
                         hintText: '••••••••',
                         prefixIcon: const Icon(Icons.lock_outlined, color: Colors.grey),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword.value
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                            color: Colors.grey,
+                          ),
+                          onPressed: _obscurePassword.toggle,
+                        ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return LocaleKeys.passwordRequired.tr;
@@ -243,7 +253,7 @@ class _LoginViewState extends State<LoginView> {
                           }
                           return null;
                         },
-                      ),
+                      )),
                       const SizedBox(height: 32),
                       
                       // Submit Button

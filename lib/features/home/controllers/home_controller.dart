@@ -48,7 +48,7 @@ class HomeController extends GetxController {
       // 2. Fetch trending songs (approved public songs sorted by views_count descending)
       final List<dynamic> trendResponse = await _client
           .from('songs')
-          .select('*, categories(*), song_tags(tags(*))')
+          .select('*, categories(*), song_tags(tags(*)), song_raags(raags(*))')
           .eq('status', true)
           .eq('visibility', 'public')
           .eq('approval_status', 'approved')
@@ -62,7 +62,7 @@ class HomeController extends GetxController {
       // 3. Fetch recently added songs (approved public songs sorted by created_at descending)
       final List<dynamic> recentResponse = await _client
           .from('songs')
-          .select('*, categories(*), song_tags(tags(*))')
+          .select('*, categories(*), song_tags(tags(*)), song_raags(raags(*))')
           .eq('status', true)
           .eq('visibility', 'public')
           .eq('approval_status', 'approved')

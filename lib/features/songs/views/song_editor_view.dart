@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
 import '../../../core/localization/locale_keys.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/camera_helper.dart';
 import '../controllers/songs_controller.dart';
 import '../models/song_model.dart';
 
@@ -26,11 +30,13 @@ class _SongEditorViewState extends State<SongEditorView> {
 
   String? _selectedCategoryId;
   final RxList<String> _selectedTagIds = <String>[].obs;
+  final RxList<String> _selectedRaagIds = <String>[].obs;
   final RxBool _status = true.obs;
   final RxString _visibility = 'public'.obs;
 
   SongModel? _song;
   bool get _isEdit => _song != null;
+  bool _isOcrLoading = false;
 
   @override
   void initState() {
@@ -51,6 +57,11 @@ class _SongEditorViewState extends State<SongEditorView> {
     final existingTags = song?.tags;
     if (existingTags != null) {
       _selectedTagIds.assignAll(existingTags.map((t) => t.id));
+    }
+
+    final existingRaags = song?.raags;
+    if (existingRaags != null) {
+      _selectedRaagIds.assignAll(existingRaags.map((r) => r.id));
     }
   }
 
@@ -90,6 +101,7 @@ class _SongEditorViewState extends State<SongEditorView> {
         language: _languageController.text.isNotEmpty ? _languageController.text : null,
         categoryId: _selectedCategoryId,
         tagIds: _selectedTagIds,
+        raagIds: _selectedRaagIds,
         status: _status.value,
         visibility: _visibility.value,
         existingSong: _song,
@@ -205,6 +217,7 @@ class _SongEditorViewState extends State<SongEditorView> {
                         const SizedBox(height: 20),
                         Obx(() {
                           return DropdownButtonFormField<String>(
+                            isExpanded: true,
                             value: _selectedCategoryId,
                             decoration: InputDecoration(
                               labelText: LocaleKeys.selectCategory.tr,
@@ -238,6 +251,7 @@ class _SongEditorViewState extends State<SongEditorView> {
                             Expanded(
                               child: Obx(() {
                                 return DropdownButtonFormField<String>(
+                                  isExpanded: true,
                                   value: _selectedCategoryId,
                                   decoration: InputDecoration(
                                     labelText: LocaleKeys.selectCategory.tr,
@@ -298,14 +312,43 @@ class _SongEditorViewState extends State<SongEditorView> {
                           ),
                         ),
                         child: Wrap(
+                          alignment: WrapAlignment.spaceBetween,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           spacing: 8,
                           runSpacing: 8,
                           children: [
-                            _buildToolbarButton(label: '[Intro]', tooltip: 'Insert Intro tag'),
-                            _buildToolbarButton(label: '[Verse]', tooltip: 'Insert Verse tag'),
-                            _buildToolbarButton(label: '[Chorus]', tooltip: 'Insert Chorus tag'),
-                            _buildToolbarButton(label: '[Bridge]', tooltip: 'Insert Bridge tag'),
-                            _buildToolbarButton(label: '[Outro]', tooltip: 'Insert Outro tag'),
+                           
+                            if (_isOcrLoading)
+                              const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            else
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  OutlinedButton.icon(
+                                    onPressed: () => _performOcr(ImageSource.camera),
+                                    icon: const Icon(Icons.camera_alt_outlined, size: 16),
+                                    label: const Text('Camera OCR', style: TextStyle(fontSize: 12)),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                  ),
+                                  OutlinedButton.icon(
+                                    onPressed: () => _performOcr(ImageSource.gallery),
+                                    icon: const Icon(Icons.image_outlined, size: 16),
+                                    label: const Text('Gallery OCR', style: TextStyle(fontSize: 12)),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                  ),
+                                ],
+                              ),
                           ],
                         ),
                       ),
@@ -365,6 +408,7 @@ class _SongEditorViewState extends State<SongEditorView> {
                       }),
                       const SizedBox(height: 16),
                       Obx(() => DropdownButtonFormField<String>(
+                            isExpanded: true,
                             dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
                             value: _visibility.value,
                             decoration: const InputDecoration(
@@ -471,11 +515,21 @@ class _SongEditorViewState extends State<SongEditorView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        LocaleKeys.tags.tr,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            LocaleKeys.tags.tr,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          TextButton.icon(
+                            onPressed: () => _showAddTagDialog(context),
+                            icon: const Icon(Icons.add, size: 18),
+                            label: const Text('Add Tag'),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
                       Obx(() {
@@ -506,6 +560,62 @@ class _SongEditorViewState extends State<SongEditorView> {
                 ),
               );
 
+              final raagsCard = Card(
+                child: Padding(
+                  padding: EdgeInsets.all(isMobile ? 16 : 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            LocaleKeys.raags.tr,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          TextButton.icon(
+                            onPressed: () => _showAddRaagDialog(context),
+                            icon: const Icon(Icons.add, size: 18),
+                            label: const Text('Add Raag'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.purpleAccent,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Obx(() {
+                        if (_controller.raags.isEmpty) {
+                          return const Text('No raags available. Add raags in the raags tab first.');
+                        }
+                        return Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: _controller.raags.map((raag) {
+                            final isSelected = _selectedRaagIds.contains(raag.id);
+                            return FilterChip(
+                              label: Text(raag.name),
+                              selected: isSelected,
+                              selectedColor: Colors.purple.withOpacity(0.2),
+                              checkmarkColor: Colors.purple,
+                              onSelected: (selected) {
+                                if (selected) {
+                                  _selectedRaagIds.add(raag.id);
+                                } else {
+                                  _selectedRaagIds.remove(raag.id);
+                                }
+                              },
+                            );
+                          }).toList(),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+              );
+
               if (isMobile) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -519,6 +629,8 @@ class _SongEditorViewState extends State<SongEditorView> {
                     thumbnailCard,
                     const SizedBox(height: 16),
                     tagsCard,
+                    const SizedBox(height: 16),
+                    raagsCard,
                   ],
                 );
               }
@@ -548,6 +660,8 @@ class _SongEditorViewState extends State<SongEditorView> {
                         thumbnailCard,
                         const SizedBox(height: 24),
                         tagsCard,
+                        const SizedBox(height: 24),
+                        raagsCard,
                       ],
                     ),
                   ),
@@ -579,6 +693,259 @@ class _SongEditorViewState extends State<SongEditorView> {
           ),
         ),
       ),
+    );
+  }
+
+  Future<String?> _showLanguageSelectionDialog() async {
+    return await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1E293B),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text(
+            'Select Lyrics Language',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Please select the language of the lyrics in the image for accurate OCR extraction.',
+                style: TextStyle(color: Colors.grey, fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.language, color: Colors.blueAccent),
+                title: const Text('Gujarati', style: TextStyle(color: Colors.white)),
+                onTap: () => Navigator.pop(context, 'guj'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.language, color: Colors.orangeAccent),
+                title: const Text('Hindi', style: TextStyle(color: Colors.white)),
+                onTap: () => Navigator.pop(context, 'hin'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.language, color: Colors.greenAccent),
+                title: const Text('English', style: TextStyle(color: Colors.white)),
+                onTap: () => Navigator.pop(context, 'eng'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _performOcr(ImageSource source) async {
+    try {
+      String? imagePath;
+
+      if (source == ImageSource.camera && kIsWeb) {
+        final result = await capturePhotoFromWebcam();
+        if (result == "NO_CAMERA") {
+          Get.snackbar(
+            'No Camera Connected',
+            'You do not have a camera connected to this device.',
+            backgroundColor: Colors.orangeAccent,
+            colorText: Colors.white,
+            snackPosition: SnackPosition.BOTTOM,
+          );
+          return;
+        }
+        if (result == "CANCELLED" || result == null) {
+          return; // User cancelled
+        }
+        imagePath = result; // base64 data URL
+      } else {
+        if (source == ImageSource.camera) {
+          final hasCamera = await checkCameraConnection();
+          if (!hasCamera) {
+            Get.snackbar(
+              'No Camera Connected',
+              'You do not have a camera connected to this device.',
+              backgroundColor: Colors.orangeAccent,
+              colorText: Colors.white,
+              snackPosition: SnackPosition.BOTTOM,
+            );
+            return;
+          }
+        }
+
+        final picker = ImagePicker();
+        final XFile? imageFile = await picker.pickImage(
+          source: source,
+          maxWidth: 600,
+          maxHeight: 800,
+        );
+
+        if (imageFile == null) return;
+        imagePath = imageFile.path;
+      }
+
+      final chosenLang = await _showLanguageSelectionDialog();
+      if (chosenLang == null) return; // User cancelled
+      final String ocrLang = chosenLang;
+
+      setState(() {
+        _isOcrLoading = true;
+      });
+
+      // Call FlutterTesseractOcr to extract text asynchronously
+      debugPrint('OCR starting. Image path: $imagePath');
+      debugPrint('OCR selected language: $ocrLang');
+
+      final String extractedText = await FlutterTesseractOcr.extractText(
+        imagePath,
+        language: ocrLang,
+      );
+
+      setState(() {
+        _isOcrLoading = false;
+      });
+
+      if (extractedText.trim().isNotEmpty) {
+        // Format lyrics to clean up redundant carriage returns or double linebreaks
+        final formattedText = extractedText
+            .replaceAll('\r\n', '\n')
+            .replaceAll(RegExp(r'\n{3,}'), '\n\n')
+            .trim();
+
+        setState(() {
+          _lyricsController.text = formattedText;
+          if (ocrLang == 'guj') _languageController.text = 'Gujarati';
+          if (ocrLang == 'hin') _languageController.text = 'Hindi';
+          if (ocrLang == 'eng') _languageController.text = 'English';
+        });
+
+        Get.snackbar(
+          'Success',
+          'Lyrics extracted successfully!',
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      } else {
+        Get.snackbar(
+          'No Text Found',
+          'Could not find any text in the image. Please make sure the image is clear and contains text.',
+          backgroundColor: Colors.orangeAccent,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isOcrLoading = false;
+      });
+      Get.snackbar(
+        'OCR Error',
+        'Failed to extract text: $e',
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
+
+  void _showAddTagDialog(BuildContext context) {
+    final textController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1E293B),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Add New Tag', style: TextStyle(color: Colors.white)),
+          content: TextField(
+            controller: textController,
+            autofocus: true,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              labelText: 'Tag Name',
+              labelStyle: const TextStyle(color: Colors.grey),
+              hintText: 'e.g. Rock, Pop, Devotional',
+              hintStyle: const TextStyle(color: Colors.grey),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final name = textController.text.trim();
+                if (name.isNotEmpty) {
+                  Navigator.pop(context);
+                  final newTag = await _controller.addNewTag(name);
+                  if (newTag != null) {
+                    _selectedTagIds.add(newTag.id);
+                  }
+                }
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showAddRaagDialog(BuildContext context) {
+    final textController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1E293B),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Add New Raag', style: TextStyle(color: Colors.white)),
+          content: TextField(
+            controller: textController,
+            autofocus: true,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              labelText: 'Raag Name',
+              labelStyle: const TextStyle(color: Colors.grey),
+              hintText: 'e.g. Bhairav, Yaman, Kalyan',
+              hintStyle: const TextStyle(color: Colors.grey),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final name = textController.text.trim();
+                if (name.isNotEmpty) {
+                  Navigator.pop(context);
+                  final newRaag = await _controller.addNewRaag(name);
+                  if (newRaag != null) {
+                    _selectedRaagIds.add(newRaag.id);
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.purple,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

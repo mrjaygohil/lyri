@@ -203,6 +203,14 @@ class DashboardLayout extends StatelessWidget {
                 const SizedBox(height: 8),
                 _buildMenuItem(
                   context: context,
+                  icon: Icons.fact_check_outlined,
+                  title: 'Song Approvals',
+                  route: AppRoutes.songApprovals,
+                  isDrawer: isDrawer,
+                ),
+                const SizedBox(height: 8),
+                _buildMenuItem(
+                  context: context,
                   icon: Icons.category_outlined,
                   title: LocaleKeys.categories.tr,
                   route: AppRoutes.categories,
@@ -214,6 +222,14 @@ class DashboardLayout extends StatelessWidget {
                   icon: Icons.local_offer_outlined,
                   title: LocaleKeys.tags.tr,
                   route: AppRoutes.tags,
+                  isDrawer: isDrawer,
+                ),
+                const SizedBox(height: 8),
+                _buildMenuItem(
+                  context: context,
+                  icon: Icons.music_note_outlined,
+                  title: LocaleKeys.raags.tr,
+                  route: AppRoutes.raags,
                   isDrawer: isDrawer,
                 ),
                 const SizedBox(height: 8),
@@ -376,10 +392,14 @@ class DashboardLayout extends StatelessWidget {
         return LocaleKeys.dashboard.tr;
       case AppRoutes.songs:
         return LocaleKeys.songs.tr;
+      case AppRoutes.songApprovals:
+        return 'Song Approvals';
       case AppRoutes.categories:
         return LocaleKeys.categories.tr;
       case AppRoutes.tags:
         return LocaleKeys.tags.tr;
+      case AppRoutes.raags:
+        return LocaleKeys.raags.tr;
       case AppRoutes.users:
         return LocaleKeys.users.tr;
       default:

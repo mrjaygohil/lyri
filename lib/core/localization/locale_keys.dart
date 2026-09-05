@@ -11,10 +11,12 @@ class LocaleKeys {
   static const String songs = 'songs';
   static const String categories = 'categories';
   static const String tags = 'tags';
+  static const String raags = 'raags';
   static const String users = 'users';
   static const String totalSongs = 'total_songs';
   static const String totalCategories = 'total_categories';
   static const String totalTags = 'total_tags';
+  static const String totalRaags = 'total_raags';
   static const String totalUsers = 'total_users';
   static const String recentSongs = 'recent_songs';
   static const String addSong = 'add_song';
@@ -26,6 +28,9 @@ class LocaleKeys {
   static const String addTag = 'add_tag';
   static const String editTag = 'edit_tag';
   static const String deleteTag = 'delete_tag';
+  static const String addRaag = 'add_raag';
+  static const String editRaag = 'edit_raag';
+  static const String deleteRaag = 'delete_raag';
   static const String cancel = 'cancel';
   static const String save = 'save';
   static const String search = 'search';
@@ -47,6 +52,7 @@ class LocaleKeys {
   static const String registrationDate = 'registration_date';
   static const String selectCategory = 'select_category';
   static const String selectTags = 'select_tags';
+  static const String selectRaags = 'select_raags';
   static const String dragDropImage = 'drag_drop_image';
   static const String uploadImage = 'upload_image';
   static const String songsPerCategory = 'songs_per_category';

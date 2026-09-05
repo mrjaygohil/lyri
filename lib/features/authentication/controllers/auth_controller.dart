@@ -9,6 +9,7 @@ import '../../../core/utils/logger.dart';
 import '../../../routes/app_routes.dart';
 import '../models/profile_model.dart';
 import '../repositories/auth_repository.dart';
+import '../../../core/utils/error_handler.dart';
 
 class AuthController extends GetxController {
   final AuthRepository _authRepository = Get.find<AuthRepository>();
@@ -133,7 +134,7 @@ class AuthController extends GetxController {
       isLoading.value = false;
       Get.snackbar(
         LocaleKeys.errorOccurred.tr,
-        e.toString().replaceAll('Exception: ', ''),
+        ErrorHandler.formatError(e),
         backgroundColor: Colors.redAccent.withOpacity(0.9),
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
@@ -161,7 +162,7 @@ class AuthController extends GetxController {
       isLoading.value = false;
       Get.snackbar(
         LocaleKeys.errorOccurred.tr,
-        e.toString().replaceAll('Exception: ', ''),
+        ErrorHandler.formatError(e),
         backgroundColor: Colors.redAccent.withOpacity(0.9),
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
@@ -197,7 +198,7 @@ class AuthController extends GetxController {
       isLoading.value = false;
       Get.snackbar(
         LocaleKeys.errorOccurred.tr,
-        e.toString().replaceAll('Exception: ', ''),
+        ErrorHandler.formatError(e),
         backgroundColor: Colors.redAccent.withOpacity(0.9),
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
@@ -221,7 +222,7 @@ class AuthController extends GetxController {
       isLoading.value = false;
       Get.snackbar(
         LocaleKeys.errorOccurred.tr,
-        e.toString().replaceAll('Exception: ', ''),
+        ErrorHandler.formatError(e),
         backgroundColor: Colors.redAccent.withOpacity(0.9),
         colorText: Colors.white,
       );

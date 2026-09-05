@@ -7,8 +7,10 @@ class SupabaseConstants {
   static const String tableProfiles = 'profiles';
   static const String tableCategories = 'categories';
   static const String tableTags = 'tags';
+  static const String tableRaags = 'raags';
   static const String tableSongs = 'songs';
   static const String tableSongTags = 'song_tags';
+  static const String tableSongRaags = 'song_raags';
 
   // Storage Bucket Names
   static const String bucketThumbnails = 'song-thumbnails';

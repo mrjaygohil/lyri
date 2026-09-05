@@ -10,10 +10,13 @@ import '../features/categories/views/categories_view.dart';
 import '../features/categories/views/category_songs_view.dart';
 import '../features/tags/bindings/tags_binding.dart';
 import '../features/tags/views/tags_view.dart';
+import '../features/raags/bindings/raags_binding.dart';
+import '../features/raags/views/raags_view.dart';
 import '../features/songs/bindings/songs_binding.dart';
 import '../features/songs/views/songs_list_view.dart';
 import '../features/songs/views/song_editor_view.dart';
 import '../features/songs/views/song_detail_view.dart';
+import '../features/songs/views/song_approvals_view.dart';
 import '../features/users/bindings/users_binding.dart';
 import '../features/users/views/users_view.dart';
 import '../features/home/bindings/home_binding.dart';
@@ -29,8 +32,10 @@ class AppRoutes {
   static const String songs = '/songs';
   static const String categories = '/categories';
   static const String tags = '/tags';
+  static const String raags = '/raags';
   static const String users = '/users';
   static const String songEditor = '/song-editor';
+  static const String songApprovals = '/song-approvals';
   
   // Mobile routes
   static const String userHome = '/user-home';
@@ -60,6 +65,13 @@ class AppRoutes {
       middlewares: [AdminMiddleware()],
     ),
     GetPage(
+      name: songApprovals,
+      page: () => const SongApprovalsView(),
+      binding: SongsBinding(),
+      transition: Transition.noTransition,
+      middlewares: [AdminMiddleware()],
+    ),
+    GetPage(
       name: categories,
       page: () => const CategoriesView(),
       binding: CategoriesBinding(),
@@ -70,6 +82,13 @@ class AppRoutes {
       name: tags,
       page: () => const TagsView(),
       binding: TagsBinding(),
+      transition: Transition.noTransition,
+      middlewares: [AdminMiddleware()],
+    ),
+    GetPage(
+      name: raags,
+      page: () => const RaagsView(),
+      binding: RaagsBinding(),
       transition: Transition.noTransition,
       middlewares: [AdminMiddleware()],
     ),

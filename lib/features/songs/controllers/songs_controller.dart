@@ -9,21 +9,28 @@ import '../../categories/models/category_model.dart';
 import '../../categories/repositories/categories_repository.dart';
 import '../../tags/models/tag_model.dart';
 import '../../tags/repositories/tags_repository.dart';
+import '../../tags/controllers/tags_controller.dart';
+import '../../raags/models/raag_model.dart';
+import '../../raags/repositories/raags_repository.dart';
+import '../../raags/controllers/raags_controller.dart';
 import '../models/song_model.dart';
 import '../repositories/songs_repository.dart';
 import '../../authentication/controllers/auth_controller.dart';
 import '../../home/controllers/home_controller.dart';
 import '../../../core/utils/search_helper.dart';
+import '../../../core/utils/error_handler.dart';
 
 class SongsController extends GetxController {
   final SongsRepository _songsRepository = Get.find<SongsRepository>();
   final CategoriesRepository _categoriesRepository = Get.find<CategoriesRepository>();
   final TagsRepository _tagsRepository = Get.find<TagsRepository>();
+  final RaagsRepository _raagsRepository = Get.find<RaagsRepository>();
   final SupabaseService _supabaseService = Get.find<SupabaseService>();
 
   final RxList<SongModel> songs = <SongModel>[].obs;
   final RxList<CategoryModel> categories = <CategoryModel>[].obs;
   final RxList<TagModel> tags = <TagModel>[].obs;
+  final RxList<RaagModel> raags = <RaagModel>[].obs;
 
   final RxBool isLoading = false.obs;
   final RxBool isUploading = false.obs;
@@ -32,6 +39,9 @@ class SongsController extends GetxController {
   final RxString searchQuery = ''.obs;
   final RxnString selectedCategoryFilter = RxnString();
   final RxnBool selectedStatusFilter = RxnBool();
+  final RxList<String> selectedTagFilters = <String>[].obs;
+  final RxList<String> selectedRaagFilters = <String>[].obs;
+  final TextEditingController searchController = TextEditingController();
 
   // Song Image Selection
   final Rxn<Uint8List> selectedImageBytes = Rxn<Uint8List>();
@@ -44,8 +54,19 @@ class SongsController extends GetxController {
     loadDependencies();
     loadSongs();
     
+    // Bind searchController to searchQuery
+    searchController.addListener(() {
+      searchQuery.value = searchController.text;
+    });
+    
     // Debounce search query by 500ms
     debounce(searchQuery, (_) => loadSongs(), time: const Duration(milliseconds: 500));
+  }
+
+  @override
+  void onClose() {
+    searchController.dispose();
+    super.onClose();
   }
 
   Future<void> loadDependencies() async {
@@ -53,11 +74,13 @@ class SongsController extends GetxController {
       final results = await Future.wait([
         _categoriesRepository.getCategories(),
         _tagsRepository.getTags(),
+        _raagsRepository.getRaags(),
       ]);
       
       // Filter out inactive categories for selection, but keep all for safety
       categories.assignAll(results[0] as List<CategoryModel>);
       tags.assignAll(results[1] as List<TagModel>);
+      raags.assignAll(results[2] as List<RaagModel>);
     } catch (e) {
       AppLogger.e('Failed to load dependencies for SongsController: $e');
     }
@@ -71,10 +94,22 @@ class SongsController extends GetxController {
         statusFilter: selectedStatusFilter.value,
       );
 
+      var filteredList = list;
+      if (selectedTagFilters.isNotEmpty) {
+        filteredList = filteredList.where((song) {
+          return song.tags?.any((t) => selectedTagFilters.contains(t.id)) ?? false;
+        }).toList();
+      }
+      if (selectedRaagFilters.isNotEmpty) {
+        filteredList = filteredList.where((song) {
+          return song.raags?.any((r) => selectedRaagFilters.contains(r.id)) ?? false;
+        }).toList();
+      }
+
       final searchVal = searchQuery.value.trim();
       if (searchVal.isNotEmpty) {
         final scoredResults = <MapEntry<SongModel, int>>[];
-        for (final song in list) {
+        for (final song in filteredList) {
           final score = SearchHelper.calculateSongMatchScore(song, searchVal);
           if (score > 0) {
             scoredResults.add(MapEntry(song, score));
@@ -87,12 +122,12 @@ class SongsController extends GetxController {
         });
         songs.assignAll(scoredResults.map((e) => e.key).toList());
       } else {
-        songs.assignAll(list);
+        songs.assignAll(filteredList);
       }
     } catch (e) {
       Get.snackbar(
         LocaleKeys.errorOccurred.tr,
-        e.toString().replaceAll('Exception: ', ''),
+        ErrorHandler.formatError(e),
         backgroundColor: Colors.redAccent,
         colorText: Colors.white,
       );
@@ -138,7 +173,7 @@ class SongsController extends GetxController {
     } catch (e) {
       Get.snackbar(
         LocaleKeys.errorOccurred.tr,
-        e.toString().replaceAll('Exception: ', ''),
+        ErrorHandler.formatError(e),
         backgroundColor: Colors.redAccent,
         colorText: Colors.white,
       );
@@ -147,7 +182,34 @@ class SongsController extends GetxController {
     }
   }
 
-  // Create Song Action
+  Future<void> updateApprovalStatus(String songId, String status) async {
+    try {
+      isLoading.value = true;
+      final currentUser = _supabaseService.client.auth.currentUser;
+      if (currentUser == null) {
+        throw Exception('User session not found.');
+      }
+      final updatedSong = await _songsRepository.updateSongApprovalStatus(songId, status, currentUser.id);
+      
+      final index = songs.indexWhere((s) => s.id == songId);
+      if (index != -1) {
+        songs[index] = updatedSong;
+      }
+      final message = status == 'approved' ? 'Song approved successfully.' : 'Song declined successfully.';
+      Get.snackbar(LocaleKeys.success.tr, message,
+          backgroundColor: Colors.green, colorText: Colors.white);
+    } catch (e) {
+      Get.snackbar(
+        LocaleKeys.errorOccurred.tr,
+        ErrorHandler.formatError(e),
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   Future<void> saveSong({
     required String title,
     required String lyrics,
@@ -156,6 +218,7 @@ class SongsController extends GetxController {
     String? language,
     String? categoryId,
     required List<String> tagIds,
+    required List<String> raagIds,
     required bool status,
     String visibility = 'public',
     SongModel? existingSong,
@@ -207,7 +270,7 @@ class SongsController extends GetxController {
       };
 
       if (isEdit) {
-        final updated = await _songsRepository.updateSong(existingSong.id, songData, tagIds);
+        final updated = await _songsRepository.updateSong(existingSong.id, songData, tagIds, raagIds);
         final index = songs.indexWhere((s) => s.id == existingSong.id);
         if (index != -1) {
           songs[index] = updated;
@@ -216,7 +279,7 @@ class SongsController extends GetxController {
         Get.snackbar(LocaleKeys.success.tr, 'Song updated successfully.',
             backgroundColor: Colors.green, colorText: Colors.white);
       } else {
-        final newSong = await _songsRepository.createSong(songData, tagIds);
+        final newSong = await _songsRepository.createSong(songData, tagIds, raagIds);
         songs.insert(0, newSong);
         
         if (Get.isRegistered<HomeController>() && Get.find<HomeController>().tabIndex.value == 2) {
@@ -235,13 +298,107 @@ class SongsController extends GetxController {
     } catch (e) {
       Get.snackbar(
         LocaleKeys.errorOccurred.tr,
-        e.toString().replaceAll('Exception: ', ''),
+        ErrorHandler.formatError(e),
         backgroundColor: Colors.redAccent,
         colorText: Colors.white,
       );
     } finally {
       isLoading.value = false;
       isUploading.value = false;
+    }
+  }
+
+  // Create Tag Action
+  Future<TagModel?> addNewTag(String name) async {
+    if (name.trim().isEmpty) return null;
+    
+    final nameTrimmed = name.trim();
+    final exists = tags.any((tag) => tag.name.trim().toLowerCase() == nameTrimmed.toLowerCase());
+    if (exists) {
+      Get.snackbar(
+        LocaleKeys.errorOccurred.tr,
+        'Tag with this name already exists.',
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+      return null;
+    }
+
+    try {
+      isLoading.value = true;
+      final newTag = await _tagsRepository.createTag(nameTrimmed);
+      tags.add(newTag);
+      tags.sort((a, b) => a.name.compareTo(b.name));
+      
+      // Update TagsController if registered
+      try {
+        if (Get.isRegistered<TagsController>()) {
+          final tagsController = Get.find<TagsController>();
+          tagsController.tags.add(newTag);
+          tagsController.tags.sort((a, b) => a.name.compareTo(b.name));
+        }
+      } catch (_) {}
+      
+      Get.snackbar(LocaleKeys.success.tr, 'Tag added successfully.',
+          backgroundColor: Colors.green, colorText: Colors.white);
+      return newTag;
+    } catch (e) {
+      Get.snackbar(
+        LocaleKeys.errorOccurred.tr,
+        ErrorHandler.formatError(e),
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+      return null;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // Create Raag Action
+  Future<RaagModel?> addNewRaag(String name) async {
+    if (name.trim().isEmpty) return null;
+    
+    final nameTrimmed = name.trim();
+    final exists = raags.any((r) => r.name.trim().toLowerCase() == nameTrimmed.toLowerCase());
+    if (exists) {
+      Get.snackbar(
+        LocaleKeys.errorOccurred.tr,
+        'Raag with this name already exists.',
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+      return null;
+    }
+
+    try {
+      isLoading.value = true;
+      final newRaag = await _raagsRepository.createRaag(nameTrimmed);
+      raags.add(newRaag);
+      raags.sort((a, b) => a.name.compareTo(b.name));
+      
+      // Update RaagsController if registered
+      try {
+        if (Get.isRegistered<RaagsController>()) {
+          final raagsController = Get.find<RaagsController>();
+          raagsController.raags.add(newRaag);
+          raagsController.raags.sort((a, b) => a.name.compareTo(b.name));
+        }
+      } catch (_) {}
+      
+      Get.snackbar(LocaleKeys.success.tr, 'Raag added successfully.',
+          backgroundColor: Colors.green, colorText: Colors.white);
+      return newRaag;
+    } catch (e) {
+      Get.snackbar(
+        LocaleKeys.errorOccurred.tr,
+        ErrorHandler.formatError(e),
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+      return null;
+    } finally {
+      isLoading.value = false;
     }
   }
 
@@ -257,9 +414,11 @@ class SongsController extends GetxController {
   }
 
   void resetFilters() {
-    searchQuery.value = '';
+    searchController.clear();
     selectedCategoryFilter.value = null;
     selectedStatusFilter.value = null;
+    selectedTagFilters.clear();
+    selectedRaagFilters.clear();
     loadSongs();
   }
 }

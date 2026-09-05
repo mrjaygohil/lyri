@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import '../../../core/localization/locale_keys.dart';
 import '../../../core/services/supabase_service.dart';
 import '../../../core/utils/logger.dart';
+import '../../../core/utils/error_handler.dart';
 import '../models/category_model.dart';
 import '../repositories/categories_repository.dart';
 
@@ -35,7 +36,7 @@ class CategoriesController extends GetxController {
     } catch (e) {
       Get.snackbar(
         LocaleKeys.errorOccurred.tr,
-        e.toString().replaceAll('Exception: ', ''),
+        ErrorHandler.formatError(e),
         backgroundColor: Colors.redAccent,
         colorText: Colors.white,
       );
@@ -73,6 +74,19 @@ class CategoriesController extends GetxController {
 
   Future<void> addCategory(String name, bool status) async {
     if (name.trim().isEmpty) return;
+    
+    final nameTrimmed = name.trim();
+    final exists = categories.any((cat) => cat.name.trim().toLowerCase() == nameTrimmed.toLowerCase());
+    if (exists) {
+      Get.snackbar(
+        LocaleKeys.errorOccurred.tr,
+        'Category with this name already exists.',
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
     try {
       isLoading.value = true;
 
@@ -103,7 +117,7 @@ class CategoriesController extends GetxController {
     } catch (e) {
       Get.snackbar(
         LocaleKeys.errorOccurred.tr,
-        e.toString().replaceAll('Exception: ', ''),
+        ErrorHandler.formatError(e),
         backgroundColor: Colors.redAccent,
         colorText: Colors.white,
       );
@@ -120,6 +134,19 @@ class CategoriesController extends GetxController {
     String? existingImageUrl,
   }) async {
     if (name.trim().isEmpty) return;
+
+    final nameTrimmed = name.trim();
+    final exists = categories.any((cat) => cat.id != id && cat.name.trim().toLowerCase() == nameTrimmed.toLowerCase());
+    if (exists) {
+      Get.snackbar(
+        LocaleKeys.errorOccurred.tr,
+        'Category with this name already exists.',
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
     try {
       isLoading.value = true;
 
@@ -154,7 +181,7 @@ class CategoriesController extends GetxController {
     } catch (e) {
       Get.snackbar(
         LocaleKeys.errorOccurred.tr,
-        e.toString().replaceAll('Exception: ', ''),
+        ErrorHandler.formatError(e),
         backgroundColor: Colors.redAccent,
         colorText: Colors.white,
       );
@@ -174,7 +201,7 @@ class CategoriesController extends GetxController {
     } catch (e) {
       Get.snackbar(
         LocaleKeys.errorOccurred.tr,
-        e.toString().replaceAll('Exception: ', ''),
+        ErrorHandler.formatError(e),
         backgroundColor: Colors.redAccent,
         colorText: Colors.white,
       );

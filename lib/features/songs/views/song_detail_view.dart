@@ -307,6 +307,7 @@ class _SongDetailViewState extends State<SongDetailView> {
         ),
         child: DropdownButtonHideUnderline(
           child: DropdownButton<String>(
+            isExpanded: true,
             value: _selectedTranslationCode.value,
             dropdownColor: const Color(0xFF1E293B),
             style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
@@ -321,7 +322,11 @@ class _SongDetailViewState extends State<SongDetailView> {
                 value: entry.key,
                 child: Padding(
                   padding: const EdgeInsets.only(right: 8.0),
-                  child: Text(entry.value),
+                  child: Text(
+                    entry.value,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
                 ),
               );
             }).toList(),
@@ -342,6 +347,7 @@ class _SongDetailViewState extends State<SongDetailView> {
         ),
         child: DropdownButtonHideUnderline(
           child: DropdownButton<String>(
+            isExpanded: true,
             value: _selectedRomanizedCode.value,
             dropdownColor: const Color(0xFF1E293B),
             style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
@@ -356,7 +362,11 @@ class _SongDetailViewState extends State<SongDetailView> {
                 value: entry.key,
                 child: Padding(
                   padding: const EdgeInsets.only(right: 8.0),
-                  child: Text(entry.value),
+                  child: Text(
+                    entry.value,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
                 ),
               );
             }).toList(),
@@ -752,7 +762,7 @@ class _SongDetailViewState extends State<SongDetailView> {
             // Tag chips footer
             if (_song.tags != null && _song.tags!.isNotEmpty)
               SliverPadding(
-                padding: const EdgeInsets.only(left: 20, right: 20, bottom: 40),
+                padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
                 sliver: SliverToBoxAdapter(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -780,6 +790,45 @@ class _SongDetailViewState extends State<SongDetailView> {
                               '#${tag.name}',
                               fontSize: 12,
                               color: Colors.indigo.shade300,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+            if (_song.raags != null && _song.raags!.isNotEmpty)
+              SliverPadding(
+                padding: const EdgeInsets.only(left: 20, right: 20, bottom: 40),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CustomText(
+                        'Raags',
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[400],
+                        isSecondary: true,
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _song.raags!.map((raag) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.purple.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.purple.withOpacity(0.2)),
+                            ),
+                            child: CustomText(
+                              '#${raag.name}',
+                              fontSize: 12,
+                              color: Colors.purple.shade300,
                             ),
                           );
                         }).toList(),
@@ -959,6 +1008,38 @@ class _SongDetailViewState extends State<SongDetailView> {
                         );
                       }).toList(),
                     ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  if (_song.raags != null && _song.raags!.isNotEmpty) ...[
+                    CustomText(
+                      'Raags',
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[400],
+                      isSecondary: true,
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _song.raags!.map((raag) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.purple.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.purple.withOpacity(0.2)),
+                          ),
+                          child: CustomText(
+                            '#${raag.name}',
+                            fontSize: 12,
+                            color: Colors.purple.shade300,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 16),
                   ],
                 ],
               ),
@@ -980,15 +1061,20 @@ class _SongDetailViewState extends State<SongDetailView> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.grey.withOpacity(0.05)),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: Wrap(
+                      spacing: 16,
+                      runSpacing: 12,
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        Row(
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
-                            _buildTranslationDropdown(),
+                            SizedBox(width: 140, child: _buildTranslationDropdown()),
+                            SizedBox(width: 140, child: _buildRomanizedDropdown()),
                             const SizedBox(width: 8),
-                            _buildRomanizedDropdown(),
-                            const SizedBox(width: 16),
                             const CustomText(
                               'Lyrics Size',
                               fontSize: 14,
@@ -1003,6 +1089,7 @@ class _SongDetailViewState extends State<SongDetailView> {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
                                 icon: const Icon(Icons.remove, color: Colors.white, size: 16),

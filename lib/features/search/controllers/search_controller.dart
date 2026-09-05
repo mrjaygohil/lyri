@@ -7,6 +7,7 @@ import '../../../core/utils/logger.dart';
 import '../../../core/utils/search_helper.dart';
 import '../../songs/models/song_model.dart';
 import '../../tags/models/tag_model.dart';
+import '../../raags/models/raag_model.dart';
 
 class SongSearchController extends GetxController {
   final SupabaseService _supabaseService = Get.find<SupabaseService>();
@@ -15,6 +16,7 @@ class SongSearchController extends GetxController {
   final RxString query = ''.obs;
   final RxList<SongModel> searchResults = <SongModel>[].obs;
   final RxList<TagModel> tags = <TagModel>[].obs;
+  final RxList<RaagModel> raags = <RaagModel>[].obs;
   final RxBool isLoading = false.obs;
 
   final TextEditingController searchFieldController = TextEditingController();
@@ -25,6 +27,7 @@ class SongSearchController extends GetxController {
   void onInit() {
     super.onInit();
     fetchTags();
+    fetchRaags();
   }
 
   @override
@@ -46,6 +49,21 @@ class SongSearchController extends GetxController {
       );
     } catch (e) {
       AppLogger.e('Failed fetching tags: $e');
+    }
+  }
+
+  Future<void> fetchRaags() async {
+    try {
+      if (!_supabaseService.isInitialized.value) return;
+      final List<dynamic> response = await _client
+          .from('raags')
+          .select()
+          .order('name', ascending: true);
+      raags.assignAll(
+        response.map((json) => RaagModel.fromJson(json as Map<String, dynamic>)).toList(),
+      );
+    } catch (e) {
+      AppLogger.e('Failed fetching raags: $e');
     }
   }
 
@@ -76,7 +94,7 @@ class SongSearchController extends GetxController {
       if (_allSongsCache.isEmpty) {
         final List<dynamic> response = await _client
             .from('songs')
-            .select('*, categories(*), song_tags(tags(*))')
+            .select('*, categories(*), song_tags(tags(*)), song_raags(raags(*))')
             .eq('status', true)
             .eq('visibility', 'public')
             .eq('approval_status', 'approved');
