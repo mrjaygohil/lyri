@@ -3,6 +3,9 @@ import 'package:get/get.dart';
 import 'package:data_table_2/data_table_2.dart';
 import 'package:intl/intl.dart';
 import '../../../core/localization/locale_keys.dart';
+import '../../../core/widgets/app_animated_button.dart';
+import '../../../core/widgets/app_glass_container.dart';
+import '../../../core/widgets/app_glass_icon_button.dart';
 import '../../../routes/app_routes.dart';
 import '../../dashboard/widgets/dashboard_layout.dart';
 import '../controllers/tags_controller.dart';
@@ -89,28 +92,39 @@ class TagsView extends GetView<TagsController> {
 
     return DashboardLayout(
       currentRoute: AppRoutes.tags,
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header actions (Responsive)
-              Builder(
-                builder: (context) {
-                  final isMobile = MediaQuery.of(context).size.width < 600;
-                  final searchField = TextField(
-                    onChanged: (val) => searchQuery.value = val,
-                    decoration: InputDecoration(
-                      hintText: '${LocaleKeys.search.tr} tags...',
-                      prefixIcon: const Icon(Icons.search),
-                    ),
-                  );
-                  final addBtn = ElevatedButton.icon(
+      child: AppGlassContainer(
+        borderRadius: 24,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header actions (Responsive)
+            Builder(
+              builder: (context) {
+                final isMobile = MediaQuery.of(context).size.width < 600;
+                final searchField = TextField(
+                  onChanged: (val) => searchQuery.value = val,
+                  decoration: InputDecoration(
+                    hintText: '${LocaleKeys.search.tr} tags...',
+                    prefixIcon: const Icon(Icons.search),
+                  ),
+                );
+                final seedBtn = AppAnimatedButton(
+                  onTap: () => controller.seedInitialTags(),
+                  child: OutlinedButton.icon(
+                    onPressed: () => controller.seedInitialTags(),
+                    icon: const Icon(Icons.cloud_upload_outlined),
+                    label: const Text('Seed Default Tags'),
+                  ),
+                );
+                final addBtn = AppAnimatedButton(
+                  onTap: () => _showTagDialog(context),
+                  child: ElevatedButton.icon(
                     onPressed: () => _showTagDialog(context),
                     icon: const Icon(Icons.add),
                     label: Text(LocaleKeys.addTag.tr),
-                  );
+                  ),
+                );
 
                   if (isMobile) {
                     return Column(
@@ -118,7 +132,15 @@ class TagsView extends GetView<TagsController> {
                       children: [
                         searchField,
                         const SizedBox(height: 12),
-                        addBtn,
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          alignment: WrapAlignment.end,
+                          children: [
+                            seedBtn,
+                            addBtn,
+                          ],
+                        ),
                       ],
                     );
                   }
@@ -131,9 +153,16 @@ class TagsView extends GetView<TagsController> {
                           child: searchField,
                         ),
                       ),
-                      addBtn,
+                      Row(
+                        children: [
+                          seedBtn,
+                          const SizedBox(width: 12),
+                          addBtn,
+                        ],
+                      ),
                     ],
                   );
+
                 },
               ),
               const SizedBox(height: 24),
@@ -157,6 +186,7 @@ class TagsView extends GetView<TagsController> {
                   }
 
                   return DataTable2(
+                    dataRowColor: WidgetStateProperty.all(Colors.transparent),
                     columnSpacing: 12,
                     horizontalMargin: 12,
                     minWidth: 600,
@@ -189,13 +219,16 @@ class TagsView extends GetView<TagsController> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
-                                IconButton(
-                                  icon: const Icon(Icons.edit_outlined, color: Colors.blueAccent),
+                                AppGlassIconButton(
+                                  icon: Icons.edit_outlined,
+                                  color: Colors.blueAccent,
                                   onPressed: () => _showTagDialog(context, tag: tag),
                                   tooltip: LocaleKeys.editTag.tr,
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                const SizedBox(width: 8),
+                                AppGlassIconButton(
+                                  icon: Icons.delete_outline,
+                                  color: Colors.redAccent,
                                   onPressed: () => _confirmDelete(context, tag),
                                   tooltip: LocaleKeys.deleteTag.tr,
                                 ),
@@ -211,7 +244,6 @@ class TagsView extends GetView<TagsController> {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 }

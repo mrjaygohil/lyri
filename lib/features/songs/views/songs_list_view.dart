@@ -3,6 +3,10 @@ import 'package:get/get.dart';
 import 'package:data_table_2/data_table_2.dart';
 import 'package:intl/intl.dart';
 import '../../../core/localization/locale_keys.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/app_animated_button.dart';
+import '../../../core/widgets/app_glass_container.dart';
+import '../../../core/widgets/app_glass_icon_button.dart';
 import '../../../routes/app_routes.dart';
 import '../../dashboard/widgets/dashboard_layout.dart';
 import '../controllers/songs_controller.dart';
@@ -253,12 +257,12 @@ class SongsListView extends GetView<SongsController> {
   Widget build(BuildContext context) {
     return DashboardLayout(
       currentRoute: AppRoutes.songs,
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      child: AppGlassContainer(
+        borderRadius: 24,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
               // Filter Toolbar (Responsive Row/Column)
               Builder(
                 builder: (context) {
@@ -423,19 +427,35 @@ class SongsListView extends GetView<SongsController> {
                         const SizedBox(height: 12),
                         Row(
                           children: [
-                            IconButton(
-                              icon: const Icon(Icons.filter_alt_off_outlined),
-                              tooltip: 'Reset Filters',
+                            AppGlassIconButton(
+                              icon: Icons.filter_alt_off_outlined,
+                              color: Colors.amber,
                               onPressed: controller.resetFilters,
+                              tooltip: 'Reset Filters',
                             ),
                             const Spacer(),
-                            ElevatedButton.icon(
-                              onPressed: () {
+                            AppAnimatedButton(
+                              onTap: () => controller.bulkUploadSongsFromJson(context),
+                              child: OutlinedButton.icon(
+                                onPressed: () => controller.bulkUploadSongsFromJson(context),
+                                icon: const Icon(Icons.upload_file),
+                                label: const Text('Bulk Upload JSON'),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            AppAnimatedButton(
+                              onTap: () {
                                 controller.clearSelectedImage();
                                 Get.toNamed(AppRoutes.songEditor);
                               },
-                              icon: const Icon(Icons.add),
-                              label: Text(LocaleKeys.addSong.tr),
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  controller.clearSelectedImage();
+                                  Get.toNamed(AppRoutes.songEditor);
+                                },
+                                icon: const Icon(Icons.add),
+                                label: Text(LocaleKeys.addSong.tr),
+                              ),
                             ),
                           ],
                         ),
@@ -453,12 +473,19 @@ class SongsListView extends GetView<SongsController> {
                             child: searchField,
                           ),
                           const SizedBox(width: 16),
-                          IconButton(
-                            icon: const Icon(Icons.filter_alt_off_outlined),
-                            tooltip: 'Reset Filters',
+                          AppGlassIconButton(
+                            icon: Icons.filter_alt_off_outlined,
+                            color: Colors.amber,
                             onPressed: controller.resetFilters,
+                            tooltip: 'Reset Filters',
                           ),
                           const SizedBox(width: 16),
+                          OutlinedButton.icon(
+                            onPressed: () => controller.bulkUploadSongsFromJson(context),
+                            icon: const Icon(Icons.upload_file),
+                            label: const Text('Bulk Upload JSON'),
+                          ),
+                          const SizedBox(width: 12),
                           ElevatedButton.icon(
                             onPressed: () {
                               controller.clearSelectedImage();
@@ -469,6 +496,7 @@ class SongsListView extends GetView<SongsController> {
                           ),
                         ],
                       ),
+
                       const SizedBox(height: 16),
                       Row(
                         children: [
@@ -503,6 +531,7 @@ class SongsListView extends GetView<SongsController> {
                   }
 
                   return DataTable2(
+                    dataRowColor: WidgetStateProperty.all(Colors.transparent),
                     columnSpacing: 12,
                     horizontalMargin: 12,
                     minWidth: 900,
@@ -624,47 +653,41 @@ class SongsListView extends GetView<SongsController> {
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
                                 if (song.approvalStatus == 'pending') ...[
-                                  IconButton(
-                                    iconSize: 20,
-                                    padding: const EdgeInsets.all(8),
-                                    constraints: const BoxConstraints(),
-                                    icon: const Icon(Icons.check_circle_outline, color: Colors.green),
+                                  AppGlassIconButton(
+                                    icon: Icons.check_circle_outline,
+                                    color: Colors.green,
                                     onPressed: () => controller.updateApprovalStatus(song.id, 'approved'),
                                     tooltip: 'Approve Song',
                                   ),
-                                  IconButton(
-                                    iconSize: 20,
-                                    padding: const EdgeInsets.all(8),
-                                    constraints: const BoxConstraints(),
-                                    icon: const Icon(Icons.cancel_outlined, color: Colors.redAccent),
+                                  const SizedBox(width: 4),
+                                  AppGlassIconButton(
+                                    icon: Icons.cancel_outlined,
+                                    color: Colors.redAccent,
                                     onPressed: () => controller.updateApprovalStatus(song.id, 'rejected'),
                                     tooltip: 'Decline Song',
                                   ),
+                                  const SizedBox(width: 4),
                                 ],
-                                IconButton(
-                                  iconSize: 20,
-                                  padding: const EdgeInsets.all(8),
-                                  constraints: const BoxConstraints(),
-                                  icon: const Icon(Icons.visibility_outlined, color: Colors.green),
+                                AppGlassIconButton(
+                                  icon: Icons.visibility_outlined,
+                                  color: Colors.cyanAccent,
                                   onPressed: () => _showLyricsDialog(context, song),
                                   tooltip: 'View Lyrics',
                                 ),
-                                IconButton(
-                                  iconSize: 20,
-                                  padding: const EdgeInsets.all(8),
-                                  constraints: const BoxConstraints(),
-                                  icon: const Icon(Icons.edit_outlined, color: Colors.blueAccent),
+                                const SizedBox(width: 4),
+                                AppGlassIconButton(
+                                  icon: Icons.edit_outlined,
+                                  color: Colors.blueAccent,
                                   onPressed: () {
                                     controller.clearSelectedImage();
                                     Get.toNamed(AppRoutes.songEditor, arguments: song);
                                   },
                                   tooltip: LocaleKeys.editSong.tr,
                                 ),
-                                IconButton(
-                                  iconSize: 20,
-                                  padding: const EdgeInsets.all(8),
-                                  constraints: const BoxConstraints(),
-                                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                const SizedBox(width: 4),
+                                AppGlassIconButton(
+                                  icon: Icons.delete_outline,
+                                  color: Colors.redAccent,
                                   onPressed: () => _confirmDelete(context, song),
                                   tooltip: LocaleKeys.deleteSong.tr,
                                 ),
@@ -680,7 +703,6 @@ class SongsListView extends GetView<SongsController> {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 }

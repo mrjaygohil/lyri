@@ -3,6 +3,10 @@ import 'package:get/get.dart';
 import 'package:data_table_2/data_table_2.dart';
 import 'package:intl/intl.dart';
 import '../../../core/localization/locale_keys.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/app_animated_button.dart';
+import '../../../core/widgets/app_glass_container.dart';
+import '../../../core/widgets/app_glass_icon_button.dart';
 import '../../../routes/app_routes.dart';
 import '../../dashboard/widgets/dashboard_layout.dart';
 import '../controllers/songs_controller.dart';
@@ -119,12 +123,12 @@ class SongApprovalsView extends GetView<SongsController> {
   Widget build(BuildContext context) {
     return DashboardLayout(
       currentRoute: AppRoutes.songApprovals,
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      child: AppGlassContainer(
+        borderRadius: 24,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
               // Search field (Responsive)
               Builder(
                 builder: (context) {
@@ -133,9 +137,10 @@ class SongApprovalsView extends GetView<SongsController> {
 
                   final searchField = TextField(
                     controller: controller.searchController,
-                    decoration: InputDecoration(
+                    onChanged: (val) => controller.searchQuery.value = val,
+                    decoration: const InputDecoration(
                       hintText: 'Search pending songs...',
-                      prefixIcon: const Icon(Icons.search),
+                      prefixIcon: Icon(Icons.search),
                     ),
                   );
 
@@ -179,6 +184,7 @@ class SongApprovalsView extends GetView<SongsController> {
                   }
 
                   return DataTable2(
+                    dataRowColor: WidgetStateProperty.all(Colors.transparent),
                     columnSpacing: 12,
                     horizontalMargin: 12,
                     minWidth: 800,
@@ -247,27 +253,23 @@ class SongApprovalsView extends GetView<SongsController> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
-                                IconButton(
-                                  iconSize: 20,
-                                  padding: const EdgeInsets.all(8),
-                                  constraints: const BoxConstraints(),
-                                  icon: const Icon(Icons.check_circle_outline, color: Colors.green),
+                                AppGlassIconButton(
+                                  icon: Icons.check_circle_outline,
+                                  color: Colors.green,
                                   onPressed: () => controller.updateApprovalStatus(song.id, 'approved'),
                                   tooltip: 'Approve Song',
                                 ),
-                                IconButton(
-                                  iconSize: 20,
-                                  padding: const EdgeInsets.all(8),
-                                  constraints: const BoxConstraints(),
-                                  icon: const Icon(Icons.cancel_outlined, color: Colors.redAccent),
+                                const SizedBox(width: 6),
+                                AppGlassIconButton(
+                                  icon: Icons.cancel_outlined,
+                                  color: Colors.redAccent,
                                   onPressed: () => controller.updateApprovalStatus(song.id, 'rejected'),
                                   tooltip: 'Decline Song',
                                 ),
-                                IconButton(
-                                  iconSize: 20,
-                                  padding: const EdgeInsets.all(8),
-                                  constraints: const BoxConstraints(),
-                                  icon: const Icon(Icons.visibility_outlined, color: Colors.green),
+                                const SizedBox(width: 6),
+                                AppGlassIconButton(
+                                  icon: Icons.visibility_outlined,
+                                  color: Colors.cyanAccent,
                                   onPressed: () => _showLyricsDialog(context, song),
                                   tooltip: 'View Lyrics',
                                 ),
@@ -283,7 +285,6 @@ class SongApprovalsView extends GetView<SongsController> {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 }

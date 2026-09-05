@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:file_picker/file_picker.dart';
+
 import '../../../core/localization/locale_keys.dart';
 import '../../../core/services/supabase_service.dart';
 import '../../../core/utils/logger.dart';
@@ -41,7 +43,18 @@ class SongsController extends GetxController {
   final RxnBool selectedStatusFilter = RxnBool();
   final RxList<String> selectedTagFilters = <String>[].obs;
   final RxList<String> selectedRaagFilters = <String>[].obs;
-  final TextEditingController searchController = TextEditingController();
+  TextEditingController _searchController = TextEditingController();
+  TextEditingController get searchController {
+    try {
+      _searchController.text;
+    } catch (_) {
+      _searchController = TextEditingController(text: searchQuery.value);
+      _searchController.addListener(() {
+        searchQuery.value = _searchController.text;
+      });
+    }
+    return _searchController;
+  }
 
   // Song Image Selection
   final Rxn<Uint8List> selectedImageBytes = Rxn<Uint8List>();
@@ -54,9 +67,9 @@ class SongsController extends GetxController {
     loadDependencies();
     loadSongs();
     
-    // Bind searchController to searchQuery
-    searchController.addListener(() {
-      searchQuery.value = searchController.text;
+    _searchController = TextEditingController(text: searchQuery.value);
+    _searchController.addListener(() {
+      searchQuery.value = _searchController.text;
     });
     
     // Debounce search query by 500ms
@@ -65,7 +78,6 @@ class SongsController extends GetxController {
 
   @override
   void onClose() {
-    searchController.dispose();
     super.onClose();
   }
 
@@ -421,4 +433,189 @@ class SongsController extends GetxController {
     selectedRaagFilters.clear();
     loadSongs();
   }
+
+  // Bulk Upload Songs from JSON File
+  Future<void> bulkUploadSongsFromJson(BuildContext context) async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        withData: true,
+      );
+
+      if (result == null || result.files.isEmpty) return;
+
+      final file = result.files.first;
+      final bytes = file.bytes;
+      if (bytes == null || bytes.isEmpty) {
+        Get.snackbar(
+          LocaleKeys.errorOccurred.tr,
+          'Could not read JSON file bytes.',
+          backgroundColor: Colors.redAccent,
+          colorText: Colors.white,
+        );
+        return;
+      }
+
+      final jsonString = utf8.decode(bytes);
+      final dynamic parsedJson = jsonDecode(jsonString);
+
+      List<dynamic> rawItems = [];
+      if (parsedJson is List) {
+        rawItems = parsedJson;
+      } else if (parsedJson is Map<String, dynamic>) {
+        if (parsedJson.containsKey('subTodos') && parsedJson['subTodos'] is List) {
+          rawItems = parsedJson['subTodos'] as List;
+        } else if (parsedJson.containsKey('todos') && parsedJson['todos'] is List) {
+          rawItems = parsedJson['todos'] as List;
+        } else if (parsedJson.containsKey('songs') && parsedJson['songs'] is List) {
+          rawItems = parsedJson['songs'] as List;
+        } else if (parsedJson.containsKey('items') && parsedJson['items'] is List) {
+          rawItems = parsedJson['items'] as List;
+        }
+      }
+
+      final List<Map<String, String>> parsedSongs = [];
+      for (var item in rawItems) {
+        if (item is Map<String, dynamic>) {
+          final title = (item['title'] ?? item['name'] ?? '').toString().trim();
+          final lyrics = (item['description'] ?? item['lyrics'] ?? item['body'] ?? '').toString().trim();
+
+          if (title.isNotEmpty && lyrics.isNotEmpty) {
+            parsedSongs.add({
+              'title': title,
+              'lyrics': lyrics,
+            });
+          }
+        }
+      }
+
+      if (parsedSongs.isEmpty) {
+        Get.snackbar(
+          LocaleKeys.errorOccurred.tr,
+          'No valid song items with title and description/lyrics found in ${file.name}.',
+          backgroundColor: Colors.orangeAccent,
+          colorText: Colors.white,
+        );
+        return;
+      }
+
+      // Show confirmation dialog with optional Category selection
+      String? selectedCategoryId;
+      if (!context.mounted) return;
+      final bool? confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) {
+          return StatefulBuilder(
+            builder: (context, setState) {
+              return AlertDialog(
+                title: Text('Bulk Upload Songs (${file.name})'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Found ${parsedSongs.length} valid song(s) to upload.'),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Assign Category (Optional):',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      value: selectedCategoryId,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        hintText: 'Select Category (Optional)',
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                      items: [
+                        const DropdownMenuItem(
+                          value: null,
+                          child: Text('No Category'),
+                        ),
+                        ...categories.map((cat) {
+                          return DropdownMenuItem(
+                            value: cat.id,
+                            child: Text(cat.name),
+                          );
+                        }),
+                      ],
+                      onChanged: (val) {
+                        setState(() {
+                          selectedCategoryId = val;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: Text(LocaleKeys.cancel.tr),
+                  ),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.cloud_upload),
+                    label: Text('Upload ${parsedSongs.length} Songs'),
+                    onPressed: () {
+                      Navigator.pop(context, true);
+                    },
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+
+      if (confirmed == true) {
+        isLoading.value = true;
+        final String? userId = _supabaseService.client.auth.currentUser?.id;
+
+        final List<Map<String, dynamic>> songsToInsert = parsedSongs.map((song) {
+          final Map<String, dynamic> row = {
+            'title': song['title'],
+            'lyrics': song['lyrics'],
+            'status': true,
+            'visibility': 'public',
+            'approval_status': 'approved',
+          };
+          if (selectedCategoryId != null) {
+            row['category_id'] = selectedCategoryId;
+          }
+          if (userId != null) {
+            row['created_by'] = userId;
+          }
+          return row;
+        }).toList();
+
+        final count = await _songsRepository.bulkCreateSongs(songsToInsert);
+        await loadSongs();
+
+        try {
+          if (Get.isRegistered<HomeController>()) {
+            Get.find<HomeController>().fetchHomeData();
+          }
+        } catch (_) {}
+
+
+        Get.snackbar(
+          LocaleKeys.success.tr,
+          'Successfully uploaded $count songs from ${file.name}!',
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e, stackTrace) {
+      AppLogger.e('Failed to bulk upload songs from JSON: $e', stackTrace: stackTrace);
+      Get.snackbar(
+        LocaleKeys.errorOccurred.tr,
+        ErrorHandler.formatError(e),
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
 }
+

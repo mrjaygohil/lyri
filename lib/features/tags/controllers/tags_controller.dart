@@ -5,6 +5,8 @@ import '../../../core/utils/error_handler.dart';
 import '../models/tag_model.dart';
 import '../repositories/tags_repository.dart';
 
+import '../../../core/utils/supabase_seeder.dart';
+
 class TagsController extends GetxController {
   final TagsRepository _tagsRepository = Get.find<TagsRepository>();
 
@@ -16,6 +18,30 @@ class TagsController extends GetxController {
     super.onInit();
     loadTags();
   }
+
+  Future<void> seedInitialTags() async {
+    try {
+      isLoading.value = true;
+      final count = await SupabaseSeeder.seedTags();
+      await loadTags();
+      Get.snackbar(
+        LocaleKeys.success.tr,
+        'Seeded $count tags successfully.',
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      Get.snackbar(
+        LocaleKeys.errorOccurred.tr,
+        ErrorHandler.formatError(e),
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
 
   Future<void> loadTags() async {
     try {

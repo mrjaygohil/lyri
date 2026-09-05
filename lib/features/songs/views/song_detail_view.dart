@@ -7,6 +7,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:translator/translator.dart';
 import '../../../core/widgets/custom_widgets.dart';
+import '../../../core/widgets/app_glass_container.dart';
+import '../../../core/widgets/app_animated_button.dart';
 import '../../favorites/controllers/favorites_controller.dart';
 import '../../playlists/controllers/playlists_controller.dart';
 import '../models/song_model.dart';
@@ -879,30 +881,32 @@ class _SongDetailViewState extends State<SongDetailView> {
 
                   // Cover Art Card
                   Center(
-                    child: Card(
-                      elevation: 8,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      clipBehavior: Clip.antiAlias,
+                    child: AppGlassContainer(
+                      borderRadius: 16,
+                      padding: EdgeInsets.zero,
                       child: SizedBox(
                         width: 300,
                         height: 300,
-                        child: _song.thumbnail != null && _song.thumbnail!.isNotEmpty
-                            ? CachedNetworkImage(
-                                imageUrl: _song.thumbnail!,
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) => Container(color: const Color(0xFF1E293B)),
-                                errorWidget: (context, url, error) => Container(color: const Color(0xFF1E293B)),
-                              )
-                            : Container(
-                                decoration: const BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [Color(0xFF312E81), Color(0xFF1E1B4B)],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: _song.thumbnail != null && _song.thumbnail!.isNotEmpty
+                              ? CachedNetworkImage(
+                                  imageUrl: _song.thumbnail!,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => Container(color: const Color(0xFF1E293B)),
+                                  errorWidget: (context, url, error) => Container(color: const Color(0xFF1E293B)),
+                                )
+                              : Container(
+                                  decoration: const BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [Color(0xFF312E81), Color(0xFF1E1B4B)],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
                                   ),
+                                  child: const Icon(Icons.music_note, size: 100, color: Colors.white24),
                                 ),
-                                child: const Icon(Icons.music_note, size: 100, color: Colors.white24),
-                              ),
+                        ),
                       ),
                     ),
                   ),
@@ -1123,12 +1127,10 @@ class _SongDetailViewState extends State<SongDetailView> {
 
                   // Lyrics Card Content
                   Expanded(
-                    child: Card(
-                      color: const Color(0xFF1E293B).withOpacity(0.4),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: SingleChildScrollView(
+                    child: AppGlassContainer(
+                      borderRadius: 16,
+                      padding: const EdgeInsets.all(24),
+                      child: SingleChildScrollView(
                           child: Obx(() {
                             if (_isTranslating.value) {
                               return const Center(
@@ -1151,7 +1153,6 @@ class _SongDetailViewState extends State<SongDetailView> {
                         ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),

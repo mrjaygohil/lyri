@@ -3,6 +3,9 @@ import 'package:get/get.dart';
 import 'package:data_table_2/data_table_2.dart';
 import 'package:intl/intl.dart';
 import '../../../core/localization/locale_keys.dart';
+import '../../../core/widgets/app_animated_button.dart';
+import '../../../core/widgets/app_glass_container.dart';
+import '../../../core/widgets/app_glass_icon_button.dart';
 import '../../../routes/app_routes.dart';
 import '../../dashboard/widgets/dashboard_layout.dart';
 import '../controllers/raags_controller.dart';
@@ -89,24 +92,37 @@ class RaagsView extends GetView<RaagsController> {
 
     return DashboardLayout(
       currentRoute: AppRoutes.raags,
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header actions (Responsive)
-              Builder(
-                builder: (context) {
-                  final isMobile = MediaQuery.of(context).size.width < 600;
-                  final searchField = TextField(
-                    onChanged: (val) => searchQuery.value = val,
-                    decoration: InputDecoration(
-                      hintText: '${LocaleKeys.search.tr} raags...',
-                      prefixIcon: const Icon(Icons.search),
+      child: AppGlassContainer(
+        borderRadius: 24,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header actions (Responsive)
+            Builder(
+              builder: (context) {
+                final isMobile = MediaQuery.of(context).size.width < 600;
+                final searchField = TextField(
+                  onChanged: (val) => searchQuery.value = val,
+                  decoration: InputDecoration(
+                    hintText: '${LocaleKeys.search.tr} raags...',
+                    prefixIcon: const Icon(Icons.search),
+                  ),
+                );
+                final seedBtn = AppAnimatedButton(
+                  onTap: () => controller.seedInitialRaags(),
+                  child: OutlinedButton.icon(
+                    onPressed: () => controller.seedInitialRaags(),
+                    icon: const Icon(Icons.cloud_upload_outlined),
+                    label: const Text('Seed Default Raags'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.purple,
                     ),
-                  );
-                  final addBtn = ElevatedButton.icon(
+                  ),
+                );
+                final addBtn = AppAnimatedButton(
+                  onTap: () => _showRaagDialog(context),
+                  child: ElevatedButton.icon(
                     onPressed: () => _showRaagDialog(context),
                     icon: const Icon(Icons.add),
                     label: Text(LocaleKeys.addRaag.tr),
@@ -114,7 +130,8 @@ class RaagsView extends GetView<RaagsController> {
                       backgroundColor: Colors.purple,
                       foregroundColor: Colors.white,
                     ),
-                  );
+                  ),
+                );
 
                   if (isMobile) {
                     return Column(
@@ -122,7 +139,15 @@ class RaagsView extends GetView<RaagsController> {
                       children: [
                         searchField,
                         const SizedBox(height: 12),
-                        addBtn,
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          alignment: WrapAlignment.end,
+                          children: [
+                            seedBtn,
+                            addBtn,
+                          ],
+                        ),
                       ],
                     );
                   }
@@ -135,9 +160,16 @@ class RaagsView extends GetView<RaagsController> {
                           child: searchField,
                         ),
                       ),
-                      addBtn,
+                      Row(
+                        children: [
+                          seedBtn,
+                          const SizedBox(width: 12),
+                          addBtn,
+                        ],
+                      ),
                     ],
                   );
+
                 },
               ),
               const SizedBox(height: 24),
@@ -161,6 +193,7 @@ class RaagsView extends GetView<RaagsController> {
                   }
 
                   return DataTable2(
+                    dataRowColor: WidgetStateProperty.all(Colors.transparent),
                     columnSpacing: 12,
                     horizontalMargin: 12,
                     minWidth: 600,
@@ -193,13 +226,16 @@ class RaagsView extends GetView<RaagsController> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
-                                IconButton(
-                                  icon: const Icon(Icons.edit_outlined, color: Colors.purpleAccent),
+                                AppGlassIconButton(
+                                  icon: Icons.edit_outlined,
+                                  color: Colors.purpleAccent,
                                   onPressed: () => _showRaagDialog(context, raag: raag),
                                   tooltip: LocaleKeys.editRaag.tr,
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                const SizedBox(width: 8),
+                                AppGlassIconButton(
+                                  icon: Icons.delete_outline,
+                                  color: Colors.redAccent,
                                   onPressed: () => _confirmDelete(context, raag),
                                   tooltip: LocaleKeys.deleteRaag.tr,
                                 ),
@@ -215,7 +251,6 @@ class RaagsView extends GetView<RaagsController> {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 }

@@ -3,6 +3,9 @@ import 'package:get/get.dart';
 import 'package:data_table_2/data_table_2.dart';
 import 'package:intl/intl.dart';
 import '../../../core/localization/locale_keys.dart';
+import '../../../core/widgets/app_animated_button.dart';
+import '../../../core/widgets/app_glass_container.dart';
+import '../../../core/widgets/app_glass_icon_button.dart';
 import '../../../routes/app_routes.dart';
 import '../../authentication/models/profile_model.dart';
 import '../../dashboard/widgets/dashboard_layout.dart';
@@ -44,12 +47,12 @@ class UsersView extends GetView<UsersController> {
 
     return DashboardLayout(
       currentRoute: AppRoutes.users,
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      child: AppGlassContainer(
+        borderRadius: 24,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
               // Header search
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 320),
@@ -84,6 +87,7 @@ class UsersView extends GetView<UsersController> {
                   }
 
                   return DataTable2(
+                    dataRowColor: WidgetStateProperty.all(Colors.transparent),
                     columnSpacing: 12,
                     horizontalMargin: 12,
                     minWidth: 800,
@@ -153,23 +157,44 @@ class UsersView extends GetView<UsersController> {
                               children: [
                                 // Don't let admins ban themselves
                                 if (!isAdmin) ...[
-                                  TextButton.icon(
-                                    icon: Icon(
-                                      isBanned ? Icons.check_circle_outline : Icons.block,
-                                      size: 16,
-                                      color: isBanned ? Colors.green : Colors.amber.shade800,
-                                    ),
-                                    label: Text(
-                                      isBanned ? LocaleKeys.unbanUser.tr : LocaleKeys.banUser.tr,
-                                      style: TextStyle(
-                                        color: isBanned ? Colors.green : Colors.amber.shade800,
-                                        fontSize: 12,
+                                  AppAnimatedButton(
+                                    onTap: () => controller.toggleUserBan(user),
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: (isBanned ? Colors.green : Colors.amber.shade800).withOpacity(0.12),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: (isBanned ? Colors.green : Colors.amber.shade800).withOpacity(0.35),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            isBanned ? Icons.check_circle_outline : Icons.block,
+                                            size: 14,
+                                            color: isBanned ? Colors.green : Colors.amber.shade800,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            isBanned ? LocaleKeys.unbanUser.tr : LocaleKeys.banUser.tr,
+                                            style: TextStyle(
+                                              color: isBanned ? Colors.green : Colors.amber.shade800,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                    onPressed: () => controller.toggleUserBan(user),
                                   ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                  const SizedBox(width: 8),
+                                  AppGlassIconButton(
+                                    icon: Icons.delete_outline,
+                                    color: Colors.redAccent,
                                     onPressed: () => _confirmDelete(context, user),
                                     tooltip: LocaleKeys.deleteUser.tr,
                                   ),
@@ -187,7 +212,6 @@ class UsersView extends GetView<UsersController> {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 }

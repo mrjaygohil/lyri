@@ -1,26 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'app_colors.dart';
 
 class AppTheme {
-  // Dark Palette
-  static const Color darkBg = Color(0xFF0F172A); // Slate 900
-  static const Color darkCardBg = Color(0xFF1E293B); // Slate 800
-  static const Color darkPrimary = Color(0xFF6366F1); // Indigo 500
-  static const Color darkSecondary = Color(0xFF8B5CF6); // Violet 500
-  static const Color darkAccent = Color(0xFF10B981); // Emerald 500
-  static const Color darkTextPrimary = Color(0xFFF8FAFC); // Slate 50
-  static const Color darkTextSecondary = Color(0xFF94A3B8); // Slate 400
-  static const Color darkBorder = Color(0xFF334155); // Slate 700
+  // Aliases referencing central AppColors constants
+  static const Color darkBg = AppColors.darkBackground;
+  static const Color darkCardBg = AppColors.darkCard;
+  static const Color darkPrimary = AppColors.primaryIndigo;
+  static const Color darkSecondary = AppColors.secondaryViolet;
+  static const Color darkAccent = AppColors.accentEmerald;
+  static const Color darkTextPrimary = AppColors.darkTextPrimary;
+  static const Color darkTextSecondary = AppColors.darkTextSecondary;
+  static const Color darkBorder = AppColors.darkBorder;
 
-  // Light Palette
-  static const Color lightBg = Color(0xFFF8FAFC); // Slate 50
-  static const Color lightCardBg = Colors.white;
-  static const Color lightPrimary = Color(0xFF4F46E5); // Indigo 600
-  static const Color lightSecondary = Color(0xFF7C3AED); // Violet 600
-  static const Color lightAccent = Color(0xFF059669); // Emerald 600
-  static const Color lightTextPrimary = Color(0xFF0F172A); // Slate 900
-  static const Color lightTextSecondary = Color(0xFF475569); // Slate 600
-  static const Color lightBorder = Color(0xFFE2E8F0); // Slate 200
+  static const Color lightBg = AppColors.lightBackground;
+  static const Color lightCardBg = AppColors.lightCard;
+  static const Color lightPrimary = AppColors.primaryIndigo;
+  static const Color lightSecondary = AppColors.secondaryViolet;
+  static const Color lightAccent = AppColors.accentEmerald;
+  static const Color lightTextPrimary = AppColors.lightTextPrimary;
+  static const Color lightTextSecondary = AppColors.lightTextSecondary;
+  static const Color lightBorder = AppColors.lightBorder;
 
   // Theme Modes
   static ThemeData get darkTheme {
@@ -76,14 +76,54 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: darkPrimary,
+          backgroundColor: darkPrimary.withOpacity(0.4),
           foregroundColor: Colors.white,
+          shadowColor: darkPrimary.withOpacity(0.3),
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
+            side: BorderSide(
+              color: Colors.white.withOpacity(0.35),
+              width: 1.2,
+            ),
           ),
           textStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          backgroundColor: Colors.white.withOpacity(0.06),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(
+              color: Colors.white.withOpacity(0.3),
+              width: 1.2,
+            ),
+          ),
+          textStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14),
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: const Color(0xFF1E293B).withOpacity(0.9),
+        elevation: 12,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: Colors.white.withOpacity(0.25),
+            width: 1.2,
+          ),
+        ),
+        titleTextStyle: GoogleFonts.outfit(
+          color: Colors.white,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+        contentTextStyle: GoogleFonts.inter(
+          color: const Color(0xFFCBD5E1),
+          fontSize: 14,
         ),
       ),
       cardTheme: CardThemeData(

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../theme/app_theme.dart';
 
 class CustomButton extends StatelessWidget {
   final String label;
@@ -33,10 +32,9 @@ class CustomButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
-    final defaultButtonColor = color ?? theme.primaryColor;
-    final defaultTextColor = textColor ?? (isOutlined ? defaultButtonColor : Colors.white);
+    final baseColor = color ?? theme.primaryColor;
+    final defaultTextColor = textColor ?? Colors.white;
 
     final buttonContent = Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -68,14 +66,23 @@ class CustomButton extends StatelessWidget {
     );
 
     if (isOutlined) {
-      return SizedBox(
+      return Container(
         width: width,
         height: height,
+        decoration: BoxDecoration(
+          color: (color ?? Colors.white).withOpacity(0.08),
+          borderRadius: BorderRadius.circular(borderRadius),
+          border: Border.all(
+            color: (color ?? Colors.white).withOpacity(0.35),
+            width: 1.2,
+          ),
+        ),
         child: OutlinedButton(
           onPressed: isLoading ? null : onPressed,
           style: OutlinedButton.styleFrom(
-            foregroundColor: defaultButtonColor,
-            side: BorderSide(color: defaultButtonColor, width: 1.5),
+            backgroundColor: Colors.transparent,
+            foregroundColor: defaultTextColor,
+            side: BorderSide.none,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(borderRadius),
             ),
@@ -86,51 +93,44 @@ class CustomButton extends StatelessWidget {
       );
     }
 
-    // Gradient or Solid Button
+    // Frosted Glass Primary / Gradient Button
     final buttonShape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(borderRadius),
     );
 
-    final actualGradient = gradient ?? (color == null ? AppTheme.primaryGradient(context) : null);
+    final glassGradient = gradient ?? LinearGradient(
+      colors: [
+        baseColor.withOpacity(0.55),
+        baseColor.withOpacity(0.35),
+      ],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
 
-    if (actualGradient != null && onPressed != null && !isLoading) {
-      return Container(
-        width: width,
-        height: height,
-        decoration: BoxDecoration(
-          gradient: actualGradient,
-          borderRadius: BorderRadius.circular(borderRadius),
-          boxShadow: [
-            BoxShadow(
-              color: (actualGradient.colors.first).withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ElevatedButton(
-          onPressed: onPressed,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            shape: buttonShape,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-          ),
-          child: buttonContent,
-        ),
-      );
-    }
-
-    return SizedBox(
+    return Container(
       width: width,
       height: height,
+      decoration: BoxDecoration(
+        gradient: glassGradient,
+        borderRadius: BorderRadius.circular(borderRadius),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.35),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: baseColor.withOpacity(0.25),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: defaultButtonColor,
-          disabledBackgroundColor: defaultButtonColor.withOpacity(0.6),
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
           shape: buttonShape,
-          elevation: 2,
           padding: const EdgeInsets.symmetric(horizontal: 16),
         ),
         child: buttonContent,

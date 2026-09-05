@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../../core/widgets/app_animated_button.dart';
+import '../../../core/widgets/app_glass_container.dart';
 import '../../../core/widgets/custom_widgets.dart';
 import '../../../routes/app_routes.dart';
 import '../../authentication/controllers/auth_controller.dart';
@@ -136,13 +138,9 @@ class ProfileTabView extends StatelessWidget {
   Widget _buildProfileCard(BuildContext context, AuthController authController) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
+      child: AppGlassContainer(
+        borderRadius: 20,
         padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.withOpacity(0.1)),
-        ),
         child: Obx(() {
           final profile = authController.profile;
           if (profile == null) return const SizedBox.shrink();
@@ -281,47 +279,49 @@ class ProfileTabView extends StatelessWidget {
         itemCount: profileController.mySongs.length,
         itemBuilder: (context, index) {
           final song = profileController.mySongs[index];
-          return Card(
-            color: const Color(0xFF1E293B),
+          return Container(
             margin: const EdgeInsets.only(bottom: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              onTap: () {
-                if (song.approvalStatus == 'approved') {
-                  Get.toNamed(AppRoutes.songDetail, arguments: song);
-                } else {
-                  Get.snackbar(
-                    'Song Under Review',
-                    'This lyrics submission is currently pending moderator approval.',
-                    backgroundColor: Colors.amber.shade900,
-                    colorText: Colors.white,
-                  );
-                }
-              },
-              title: CustomText(
-                song.title,
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              subtitle: Row(
-                children: [
-                  CustomText(
-                    song.singerName ?? 'Unknown Artist',
-                    fontSize: 12,
-                    color: Colors.grey[400],
+            child: AppGlassContainer(
+              borderRadius: 12,
+              padding: EdgeInsets.zero,
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                onTap: () {
+                  if (song.approvalStatus == 'approved') {
+                    Get.toNamed(AppRoutes.songDetail, arguments: song);
+                  } else {
+                    Get.snackbar(
+                      'Song Under Review',
+                      'This lyrics submission is currently pending moderator approval.',
+                      backgroundColor: Colors.amber.shade900,
+                      colorText: Colors.white,
+                    );
+                  }
+                },
+                title: CustomText(
+                  song.title,
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Row(
+                  children: [
+                    CustomText(
+                      song.singerName ?? 'Unknown Artist',
+                      fontSize: 12,
+                      color: Colors.grey[400],
+                    ),
+                    const SizedBox(width: 8),
+                    _buildApprovalStatusBadge(song.approvalStatus),
+                  ],
+                ),
+                trailing: Builder(
+                  builder: (context) => IconButton(
+                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                    onPressed: () => _confirmDeleteSong(context, profileController, song.id, song.title),
                   ),
-                  const SizedBox(width: 8),
-                  _buildApprovalStatusBadge(song.approvalStatus),
-                ],
-              ),
-              trailing: Builder(
-                builder: (context) => IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                  onPressed: () => _confirmDeleteSong(context, profileController, song.id, song.title),
                 ),
               ),
             ),

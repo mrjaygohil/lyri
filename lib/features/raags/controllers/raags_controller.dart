@@ -5,6 +5,8 @@ import '../../../core/utils/error_handler.dart';
 import '../models/raag_model.dart';
 import '../repositories/raags_repository.dart';
 
+import '../../../core/utils/supabase_seeder.dart';
+
 class RaagsController extends GetxController {
   final RaagsRepository _raagsRepository = Get.find<RaagsRepository>();
 
@@ -16,6 +18,30 @@ class RaagsController extends GetxController {
     super.onInit();
     loadRaags();
   }
+
+  Future<void> seedInitialRaags() async {
+    try {
+      isLoading.value = true;
+      final count = await SupabaseSeeder.seedRaags();
+      await loadRaags();
+      Get.snackbar(
+        LocaleKeys.success.tr,
+        'Seeded $count raags successfully.',
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      Get.snackbar(
+        LocaleKeys.errorOccurred.tr,
+        ErrorHandler.formatError(e),
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
 
   Future<void> loadRaags() async {
     try {

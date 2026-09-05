@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/custom_widgets.dart';
+import '../../../core/widgets/app_glass_container.dart';
 import '../../../routes/app_routes.dart';
 import '../../songs/controllers/songs_controller.dart';
 import '../../favorites/controllers/favorites_controller.dart';
@@ -108,13 +109,14 @@ class _CategorySongsViewState extends State<CategorySongsView> {
               final lines = song.lyrics.split('\n');
               final previewLyrics = lines.take(3).join('\n').trim();
 
-              return Card(
-                color: const Color(0xFF1E293B),
+              return Container(
                 margin: const EdgeInsets.only(bottom: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                clipBehavior: Clip.antiAlias,
-                child: InkWell(
-                  onTap: () => Get.toNamed(AppRoutes.songDetail, arguments: song),
+                child: AppGlassContainer(
+                  borderRadius: 16,
+                  padding: EdgeInsets.zero,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () => Get.toNamed(AppRoutes.songDetail, arguments: song),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -212,7 +214,8 @@ class _CategorySongsViewState extends State<CategorySongsView> {
                     ],
                   ),
                 ),
-              );
+              ),
+            );
             },
           ),
         ),

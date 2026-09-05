@@ -3,6 +3,9 @@ import 'package:get/get.dart';
 import 'package:data_table_2/data_table_2.dart';
 import 'package:intl/intl.dart';
 import '../../../core/localization/locale_keys.dart';
+import '../../../core/widgets/app_animated_button.dart';
+import '../../../core/widgets/app_glass_container.dart';
+import '../../../core/widgets/app_glass_icon_button.dart';
 import '../../../routes/app_routes.dart';
 import '../../dashboard/widgets/dashboard_layout.dart';
 import '../controllers/categories_controller.dart';
@@ -214,28 +217,31 @@ class CategoriesView extends GetView<CategoriesController> {
 
     return DashboardLayout(
       currentRoute: AppRoutes.categories,
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header actions (Responsive)
-              Builder(
-                builder: (context) {
-                  final isMobile = MediaQuery.of(context).size.width < 600;
-                  final searchField = TextField(
-                    onChanged: (val) => searchQuery.value = val,
-                    decoration: InputDecoration(
-                      hintText: '${LocaleKeys.search.tr} categories...',
-                      prefixIcon: const Icon(Icons.search),
-                    ),
-                  );
-                  final addBtn = ElevatedButton.icon(
+      child: AppGlassContainer(
+        borderRadius: 24,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header actions (Responsive)
+            Builder(
+              builder: (context) {
+                final isMobile = MediaQuery.of(context).size.width < 600;
+                final searchField = TextField(
+                  onChanged: (val) => searchQuery.value = val,
+                  decoration: InputDecoration(
+                    hintText: '${LocaleKeys.search.tr} categories...',
+                    prefixIcon: const Icon(Icons.search),
+                  ),
+                );
+                final addBtn = AppAnimatedButton(
+                  onTap: () => _showCategoryDialog(context),
+                  child: ElevatedButton.icon(
                     onPressed: () => _showCategoryDialog(context),
                     icon: const Icon(Icons.add),
                     label: Text(LocaleKeys.addCategory.tr),
-                  );
+                  ),
+                );
 
                   if (isMobile) {
                     return Column(
@@ -282,6 +288,7 @@ class CategoriesView extends GetView<CategoriesController> {
                   }
 
                   return DataTable2(
+                    dataRowColor: WidgetStateProperty.all(Colors.transparent),
                     columnSpacing: 12,
                     horizontalMargin: 12,
                     minWidth: 700,
@@ -363,13 +370,16 @@ class CategoriesView extends GetView<CategoriesController> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
-                                IconButton(
-                                  icon: const Icon(Icons.edit_outlined, color: Colors.blueAccent),
+                                AppGlassIconButton(
+                                  icon: Icons.edit_outlined,
+                                  color: Colors.blueAccent,
                                   onPressed: () => _showCategoryDialog(context, category: cat),
                                   tooltip: LocaleKeys.editCategory.tr,
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                const SizedBox(width: 8),
+                                AppGlassIconButton(
+                                  icon: Icons.delete_outline,
+                                  color: Colors.redAccent,
                                   onPressed: () => _confirmDelete(context, cat),
                                   tooltip: LocaleKeys.deleteCategory.tr,
                                 ),
@@ -385,7 +395,6 @@ class CategoriesView extends GetView<CategoriesController> {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 }

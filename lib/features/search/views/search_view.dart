@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../../core/widgets/app_animated_button.dart';
+import '../../../core/widgets/app_glass_container.dart';
 import '../../../core/widgets/custom_widgets.dart';
 import '../../../routes/app_routes.dart';
 import '../../../core/utils/search_helper.dart';
@@ -55,14 +57,20 @@ class SearchView extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Get.back(),
         ),
-        title: CustomTextFormField(
+        title: Obx(() => CustomTextFormField(
           controller: controller.searchFieldController,
           hintText: targetPlaylist != null 
               ? 'Search to add to "${targetPlaylist.title}"...' 
               : 'Search songs, singers, album...',
           prefixIcon: const Icon(Icons.search, color: Colors.grey),
+          suffixIcon: controller.hasActiveFilters
+              ? IconButton(
+                  icon: const Icon(Icons.clear, color: Colors.grey),
+                  onPressed: controller.clearAllFilters,
+                )
+              : null,
           onChanged: controller.onQueryChanged,
-        ),
+        )),
       ),
       body: Column(
         children: [
@@ -90,74 +98,144 @@ class SearchView extends StatelessWidget {
                 ],
               ),
             ),
-          Expanded(
-            child: Obx(() {
-              if (controller.isLoading.value) {
-                return const Center(child: CircularProgressIndicator());
-              }
 
-              if (controller.query.value.trim().isEmpty) {
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 800),
+          // Multi-Select Tags & Raags Accordion/Section with scrollable constrained box
+          Obx(() {
+            if (controller.tags.isEmpty && controller.raags.isEmpty) {
+              return const SizedBox.shrink();
+            }
+            final int activeFilterCount = controller.selectedTags.length + controller.selectedRaags.length;
+
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: ExpansionTile(
+                tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                visualDensity: VisualDensity.compact,
+                collapsedBackgroundColor: const Color(0xFF1E293B),
+                backgroundColor: const Color(0xFF1E293B),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                collapsedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                title: Row(
+                  children: [
+                    const Icon(Icons.tune, size: 18, color: Color(0xFF818CF8)),
+                    const SizedBox(width: 8),
+                    const CustomText(
+                      'Filter by Tags & Raags (Multi-Select)',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                    if (activeFilterCount > 0) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF6366F1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '$activeFilterCount selected',
+                          style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                children: [
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 220),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const SizedBox(height: 32),
-                          Icon(Icons.search, size: 64, color: Colors.grey[600]),
-                          const SizedBox(height: 16),
-                          const CustomText('Type above to find lyrics', isSecondary: true),
                           if (controller.tags.isNotEmpty) ...[
-                            const SizedBox(height: 48),
-                            const CustomText(
-                              'Explore by Tags',
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              useOutfit: true,
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const CustomText('Select Tags:', fontSize: 12, isSecondary: true),
+                                if (controller.selectedTags.isNotEmpty)
+                                  GestureDetector(
+                                    onTap: () {
+                                      controller.selectedTags.clear();
+                                      controller.searchSongs();
+                                    },
+                                    child: const Text(
+                                      'Clear tags',
+                                      style: TextStyle(color: Colors.indigoAccent, fontSize: 11),
+                                    ),
+                                  ),
+                              ],
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 6),
                             Wrap(
-                              alignment: WrapAlignment.center,
-                              spacing: 8,
-                              runSpacing: 10,
+                              spacing: 6,
+                              runSpacing: 6,
                               children: controller.tags.map((tag) {
-                                return ActionChip(
+                                final isSelected = controller.selectedTags.contains(tag.name);
+                                return FilterChip(
+                                  selected: isSelected,
                                   label: Text('#${tag.name}'),
-                                  backgroundColor: const Color(0xFF1E293B),
-                                  labelStyle: const TextStyle(color: Colors.white, fontSize: 13),
-                                  side: BorderSide(color: const Color(0xFF6366F1).withValues(alpha: 0.3)),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                  onPressed: () => controller.selectTag(tag.name),
+                                  selectedColor: const Color(0xFF6366F1),
+                                  backgroundColor: const Color(0xFF0F172A),
+                                  checkmarkColor: Colors.white,
+                                  showCheckmark: true,
+                                  labelStyle: TextStyle(
+                                    color: isSelected ? Colors.white : Colors.grey[300],
+                                    fontSize: 12,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                  ),
+                                  side: BorderSide(
+                                    color: isSelected ? const Color(0xFF818CF8) : const Color(0xFF6366F1).withValues(alpha: 0.3),
+                                  ),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  onSelected: (_) => controller.toggleTag(tag.name),
                                 );
                               }).toList(),
                             ),
                           ],
                           if (controller.raags.isNotEmpty) ...[
-                            const SizedBox(height: 32),
-                            const CustomText(
-                              'Explore by Raags',
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              useOutfit: true,
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const CustomText('Select Raags:', fontSize: 12, isSecondary: true),
+                                if (controller.selectedRaags.isNotEmpty)
+                                  GestureDetector(
+                                    onTap: () {
+                                      controller.selectedRaags.clear();
+                                      controller.searchSongs();
+                                    },
+                                    child: const Text(
+                                      'Clear raags',
+                                      style: TextStyle(color: Colors.purpleAccent, fontSize: 11),
+                                    ),
+                                  ),
+                              ],
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 6),
                             Wrap(
-                              alignment: WrapAlignment.center,
-                              spacing: 8,
-                              runSpacing: 10,
+                              spacing: 6,
+                              runSpacing: 6,
                               children: controller.raags.map((raag) {
-                                return ActionChip(
+                                final isSelected = controller.selectedRaags.contains(raag.name);
+                                return FilterChip(
+                                  selected: isSelected,
                                   label: Text('#${raag.name}'),
-                                  backgroundColor: const Color(0xFF1E293B),
-                                  labelStyle: const TextStyle(color: Colors.white, fontSize: 13),
-                                  side: BorderSide(color: Colors.purple.withValues(alpha: 0.4)),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                  onPressed: () => controller.selectTag(raag.name),
+                                  selectedColor: Colors.purple,
+                                  backgroundColor: const Color(0xFF0F172A),
+                                  checkmarkColor: Colors.white,
+                                  showCheckmark: true,
+                                  labelStyle: TextStyle(
+                                    color: isSelected ? Colors.white : Colors.grey[300],
+                                    fontSize: 12,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                  ),
+                                  side: BorderSide(
+                                    color: isSelected ? Colors.purpleAccent : Colors.purple.withValues(alpha: 0.4),
+                                  ),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  onSelected: (_) => controller.toggleRaag(raag.name),
                                 );
                               }).toList(),
                             ),
@@ -166,18 +244,89 @@ class SearchView extends StatelessWidget {
                       ),
                     ),
                   ),
-                );
+                ],
+              ),
+            );
+          }),
+
+          // Active Filters Badges Row (if any)
+          Obx(() {
+            if (!controller.hasActiveFilters) return const SizedBox.shrink();
+            return Container(
+              width: double.infinity,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0F172A),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    const Text('Active Filters: ', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                    if (controller.query.value.trim().isNotEmpty) ...[
+                      InputChip(
+                        label: Text('Query: "${controller.query.value}"'),
+                        onDeleted: controller.clearSearchText,
+                        deleteIconColor: Colors.white,
+                        backgroundColor: const Color(0xFF334155),
+                        labelStyle: const TextStyle(color: Colors.white, fontSize: 11),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      const SizedBox(width: 6),
+                    ],
+                    ...controller.selectedTags.map((tag) => Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: InputChip(
+                            label: Text('#$tag'),
+                            onDeleted: () => controller.toggleTag(tag),
+                            deleteIconColor: Colors.white,
+                            backgroundColor: const Color(0xFF6366F1),
+                            labelStyle: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        )),
+                    ...controller.selectedRaags.map((raag) => Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: InputChip(
+                            label: Text('#$raag'),
+                            onDeleted: () => controller.toggleRaag(raag),
+                            deleteIconColor: Colors.white,
+                            backgroundColor: Colors.purple,
+                            labelStyle: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        )),
+                  ],
+                ),
+              ),
+            );
+          }),
+
+          // Song List with Infinite Scroll
+          Expanded(
+            child: Obx(() {
+              if (controller.isLoading.value) {
+                return const Center(child: CircularProgressIndicator());
               }
 
-              if (controller.searchResults.isEmpty) {
+              final songs = controller.displayedSongs;
+              if (songs.isEmpty) {
                 return Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.search_off, size: 64, color: Colors.grey[600]),
+                      Icon(
+                        controller.hasActiveFilters ? Icons.search_off : Icons.music_off,
+                        size: 64,
+                        color: Colors.grey[600],
+                      ),
                       const SizedBox(height: 16),
                       CustomText(
-                        'No results found for "${controller.query.value}"',
+                        controller.hasActiveFilters
+                            ? 'No songs match your active filters'
+                            : 'No songs available in database',
                         isSecondary: true,
                       ),
                     ],
@@ -189,14 +338,28 @@ class SearchView extends StatelessWidget {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 800),
                   child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: controller.searchResults.length,
+                    controller: controller.scrollController,
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    itemCount: songs.length + (controller.hasMore.value ? 1 : 0),
                     itemBuilder: (context, index) {
-                      final song = controller.searchResults[index];
-                      return Card(
-                        color: const Color(0xFF1E293B),
+                      if (index == songs.length) {
+                        return const Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: Center(
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(strokeWidth: 2.5),
+                            ),
+                          ),
+                        );
+                      }
+
+                      final song = songs[index];
+                      return AppGlassContainer(
+                        borderRadius: 14,
                         margin: const EdgeInsets.only(bottom: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        onTap: () => Get.toNamed(AppRoutes.songDetail, arguments: song),
                         child: ListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                           onTap: () => Get.toNamed(AppRoutes.songDetail, arguments: song),
@@ -250,9 +413,12 @@ class SearchView extends StatelessWidget {
                                   spacing: 4,
                                   runSpacing: 4,
                                   children: song.tags!.map((t) {
-                                    final isMatch = t.name
-                                        .toLowerCase()
-                                        .contains(controller.query.value.toLowerCase().trim());
+                                    final isTagSelected = controller.selectedTags.contains(t.name);
+                                    final isMatch = isTagSelected ||
+                                        (controller.query.value.trim().isNotEmpty &&
+                                            t.name
+                                                .toLowerCase()
+                                                .contains(controller.query.value.toLowerCase().trim()));
                                     return Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
@@ -285,9 +451,12 @@ class SearchView extends StatelessWidget {
                                   spacing: 4,
                                   runSpacing: 4,
                                   children: song.raags!.map((r) {
-                                    final isMatch = r.name
-                                        .toLowerCase()
-                                        .contains(controller.query.value.toLowerCase().trim());
+                                    final isRaagSelected = controller.selectedRaags.contains(r.name);
+                                    final isMatch = isRaagSelected ||
+                                        (controller.query.value.trim().isNotEmpty &&
+                                            r.name
+                                                .toLowerCase()
+                                                .contains(controller.query.value.toLowerCase().trim()));
                                     return Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(

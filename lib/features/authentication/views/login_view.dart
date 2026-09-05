@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import '../../../core/localization/locale_keys.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/custom_widgets.dart';
+import '../../../core/widgets/app_glass_container.dart';
+import '../../../core/widgets/app_animated_button.dart';
 import '../controllers/auth_controller.dart';
 
 class LoginView extends StatefulWidget {
@@ -52,44 +54,58 @@ class _LoginViewState extends State<LoginView> {
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
+      backgroundColor: const Color(0xFF0F172A),
       body: Stack(
         children: [
-          // Background Gradient decoration
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xFF0F172A),
-                  Color(0xFF1E1E38),
-                  Color(0xFF0F172A),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-          ),
-          // Gradient Accent Circles
+          // Ambient Gradient Mesh Background
           Positioned(
-            top: -size.height * 0.2,
-            right: -size.width * 0.1,
+            top: -100,
+            left: -100,
             child: Container(
-              width: size.width * 0.4,
-              height: size.width * 0.4,
+              width: 350,
+              height: 350,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF6366F1).withOpacity(0.15),
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFF6366F1).withOpacity(0.35),
+                    Colors.transparent,
+                  ],
+                ),
               ),
             ),
           ),
           Positioned(
-            bottom: -size.height * 0.2,
-            left: -size.width * 0.1,
+            bottom: -100,
+            right: -100,
             child: Container(
-              width: size.width * 0.4,
-              height: size.width * 0.4,
+              width: 400,
+              height: 400,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF8B5CF6).withOpacity(0.12),
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFFEC4899).withOpacity(0.25),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: size.height * 0.4,
+            right: size.width * 0.2,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFF06B6D4).withOpacity(0.2),
+                    Colors.transparent,
+                  ],
+                ),
               ),
             ),
           ),
@@ -97,16 +113,12 @@ class _LoginViewState extends State<LoginView> {
           Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
-              child: Container(
+              child: SizedBox(
                 width: size.width > 500 ? 450 : size.width - 32,
-                padding: EdgeInsets.all(size.width > 500 ? 40 : 24),
-                decoration: AppTheme.glassDecoration(
-                  context: context,
-                  opacity: 0.2,
-                  blur: 20,
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Form(
+                child: AppGlassContainer(
+                  borderRadius: 24,
+                  padding: EdgeInsets.all(size.width > 500 ? 40 : 24),
+                  child: Form(
                   key: _formKey,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -259,11 +271,14 @@ class _LoginViewState extends State<LoginView> {
                       // Submit Button
                       Obx(() {
                         final isBtnLoading = _authController.isLoading.value;
-                        return CustomButton(
-                          label: _isSignUp.value ? 'REGISTER' : LocaleKeys.login.tr.toUpperCase(),
-                          onPressed: _submit,
-                          isLoading: isBtnLoading,
-                          height: 52,
+                        return AppAnimatedButton(
+                          onTap: _submit,
+                          child: CustomButton(
+                            label: _isSignUp.value ? 'REGISTER' : LocaleKeys.login.tr.toUpperCase(),
+                            onPressed: _submit,
+                            isLoading: isBtnLoading,
+                            height: 52,
+                          ),
                         );
                       }),
                       const SizedBox(height: 20),
@@ -271,12 +286,12 @@ class _LoginViewState extends State<LoginView> {
                       // Divider OR
                       Row(
                         children: [
-                          Expanded(child: Divider(color: Colors.grey.withOpacity(0.3))),
+                          Expanded(child: Divider(color: Colors.white.withOpacity(0.15))),
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: CustomText('OR', color: Colors.grey[500], isSecondary: true),
+                            child: CustomText('OR', color: Colors.grey[400], isSecondary: true),
                           ),
-                          Expanded(child: Divider(color: Colors.grey.withOpacity(0.3))),
+                          Expanded(child: Divider(color: Colors.white.withOpacity(0.15))),
                         ],
                       ),
                       const SizedBox(height: 20),
@@ -284,23 +299,26 @@ class _LoginViewState extends State<LoginView> {
                       // Google Login Button
                       Obx(() {
                         final isBtnLoading = _authController.isLoading.value;
-                        return OutlinedButton.icon(
-                          onPressed: isBtnLoading ? null : _authController.loginWithGoogle,
-                          icon: Image.network(
-                            'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/24px-Google_%22G%22_logo.svg.png',
-                            width: 18,
-                            height: 18,
-                            errorBuilder: (_, __, ___) => const Icon(Icons.g_mobiledata, color: Colors.white),
-                          ),
-                          label: CustomText(
-                            _isSignUp.value ? 'Sign up with Google' : 'Sign in with Google',
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: Colors.grey.withOpacity(0.4)),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        return AppAnimatedButton(
+                          onTap: isBtnLoading ? null : _authController.loginWithGoogle,
+                          child: OutlinedButton.icon(
+                            onPressed: isBtnLoading ? null : _authController.loginWithGoogle,
+                            icon: Image.network(
+                              'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/24px-Google_%22G%22_logo.svg.png',
+                              width: 18,
+                              height: 18,
+                              errorBuilder: (_, __, ___) => const Icon(Icons.g_mobiledata, color: Colors.white),
+                            ),
+                            label: CustomText(
+                              _isSignUp.value ? 'Sign up with Google' : 'Sign in with Google',
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
                           ),
                         );
                       }),
@@ -332,8 +350,9 @@ class _LoginViewState extends State<LoginView> {
               ),
             ),
           ),
-        ],
-      ),
-    );
+        ),
+      ],
+    ),
+  );
   }
 }

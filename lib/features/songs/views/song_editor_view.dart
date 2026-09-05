@@ -6,6 +6,8 @@ import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
 import '../../../core/localization/locale_keys.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/camera_helper.dart';
+import '../../../core/widgets/app_animated_button.dart';
+import '../../../core/widgets/app_glass_container.dart';
 import '../controllers/songs_controller.dart';
 import '../models/song_model.dart';
 
@@ -132,12 +134,12 @@ class _SongEditorViewState extends State<SongEditorView> {
           key: _formKey,
           child: Builder(
             builder: (context) {
-              final metadataCard = Card(
-                child: Padding(
-                  padding: EdgeInsets.all(isMobile ? 16 : 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+              final metadataCard = AppGlassContainer(
+                borderRadius: 20,
+                padding: EdgeInsets.all(isMobile ? 16 : 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                       Text(
                         'Song Metadata',
                         style: theme.textTheme.titleMedium?.copyWith(
@@ -274,15 +276,14 @@ class _SongEditorViewState extends State<SongEditorView> {
                         ),
                     ],
                   ),
-                ),
               );
 
-              final lyricsCard = Card(
-                child: Padding(
-                  padding: EdgeInsets.all(isMobile ? 16 : 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+              final lyricsCard = AppGlassContainer(
+                borderRadius: 20,
+                padding: EdgeInsets.all(isMobile ? 16 : 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -388,15 +389,14 @@ class _SongEditorViewState extends State<SongEditorView> {
                       ),
                     ],
                   ),
-                ),
               );
 
-              final controlsCard = Card(
-                child: Padding(
-                  padding: EdgeInsets.all(isMobile ? 16 : 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+              final controlsCard = AppGlassContainer(
+                borderRadius: 20,
+                padding: EdgeInsets.all(isMobile ? 16 : 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                       Obx(() {
                         return SwitchListTile(
                           title: Text(LocaleKeys.status.tr),
@@ -441,15 +441,14 @@ class _SongEditorViewState extends State<SongEditorView> {
                       }),
                     ],
                   ),
-                ),
               );
 
-              final thumbnailCard = Card(
-                child: Padding(
-                  padding: EdgeInsets.all(isMobile ? 16 : 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+              final thumbnailCard = AppGlassContainer(
+                borderRadius: 20,
+                padding: EdgeInsets.all(isMobile ? 16 : 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                       Text(
                         LocaleKeys.thumbnail.tr,
                         style: theme.textTheme.titleMedium?.copyWith(
@@ -506,15 +505,14 @@ class _SongEditorViewState extends State<SongEditorView> {
                       }),
                     ],
                   ),
-                ),
               );
 
-              final tagsCard = Card(
-                child: Padding(
-                  padding: EdgeInsets.all(isMobile ? 16 : 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+              final tagsCard = AppGlassContainer(
+                borderRadius: 20,
+                padding: EdgeInsets.all(isMobile ? 16 : 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -557,15 +555,14 @@ class _SongEditorViewState extends State<SongEditorView> {
                       }),
                     ],
                   ),
-                ),
               );
 
-              final raagsCard = Card(
-                child: Padding(
-                  padding: EdgeInsets.all(isMobile ? 16 : 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+              final raagsCard = AppGlassContainer(
+                borderRadius: 20,
+                padding: EdgeInsets.all(isMobile ? 16 : 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -613,7 +610,6 @@ class _SongEditorViewState extends State<SongEditorView> {
                       }),
                     ],
                   ),
-                ),
               );
 
               if (isMobile) {

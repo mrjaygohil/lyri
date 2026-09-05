@@ -179,4 +179,20 @@ class SongsRepository {
       rethrow;
     }
   }
+
+  // Bulk Create Songs
+  Future<int> bulkCreateSongs(List<Map<String, dynamic>> songsData) async {
+    try {
+      if (songsData.isEmpty) return 0;
+      await _client
+          .from(SupabaseConstants.tableSongs)
+          .insert(songsData);
+      AppLogger.i('Successfully bulk created ${songsData.length} songs');
+      return songsData.length;
+    } catch (e, stackTrace) {
+      AppLogger.e('Failed to bulk create songs: $e', stackTrace: stackTrace);
+      rethrow;
+    }
+  }
 }
+

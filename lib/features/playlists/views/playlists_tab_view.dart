@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/widgets/app_animated_button.dart';
+import '../../../core/widgets/app_glass_container.dart';
 import '../../../core/widgets/custom_widgets.dart';
 import '../../../routes/app_routes.dart';
 import '../controllers/playlists_controller.dart';
@@ -65,45 +67,47 @@ class PlaylistsTabView extends StatelessWidget {
                       itemCount: controller.playlists.length,
                       itemBuilder: (context, index) {
                         final playlist = controller.playlists[index];
-                        return Card(
-                          color: const Color(0xFF1E293B),
+                        return Container(
                           margin: const EdgeInsets.only(bottom: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            onTap: () => Get.toNamed(AppRoutes.playlistDetail, arguments: playlist),
-                            leading: Container(
-                              width: 50,
-                              height: 50,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF334155),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(Icons.playlist_play, color: Colors.indigo, size: 30),
-                            ),
-                            title: CustomText(
-                              playlist.title,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            subtitle: CustomText(
-                              '${playlist.songs.length} songs • ${playlist.visibility.capitalizeFirst}',
-                              fontSize: 12,
-                              color: Colors.grey[400],
-                              isSecondary: true,
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                                  onPressed: () => _confirmDelete(context, controller, playlist.id, playlist.title),
+                          child: AppGlassContainer(
+                            borderRadius: 12,
+                            padding: EdgeInsets.zero,
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              onTap: () => Get.toNamed(AppRoutes.playlistDetail, arguments: playlist),
+                              leading: Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF334155),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
-                                const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
-                              ],
+                                child: const Icon(Icons.playlist_play, color: Colors.indigo, size: 30),
+                              ),
+                              title: CustomText(
+                                playlist.title,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              subtitle: CustomText(
+                                '${playlist.songs.length} songs • ${playlist.visibility.capitalizeFirst}',
+                                fontSize: 12,
+                                color: Colors.grey[400],
+                                isSecondary: true,
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                    onPressed: () => _confirmDelete(context, controller, playlist.id, playlist.title),
+                                  ),
+                                  const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+                                ],
+                              ),
                             ),
                           ),
                         );
@@ -277,21 +281,11 @@ class _HoverPlaylistCardState extends State<_HoverPlaylistCard> {
   Widget build(BuildContext context) {
     final playlist = widget.playlist;
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        transform: _isHovered ? (Matrix4.identity()..scale(1.03)) : Matrix4.identity(),
-        child: GestureDetector(
-          onTap: widget.onTap,
-          child: Card(
-            color: const Color(0xFF1E293B),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            elevation: _isHovered ? 8 : 4,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
+    return AppGlassContainer(
+      borderRadius: 16,
+      onTap: widget.onTap,
+      padding: const EdgeInsets.all(16),
+      child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
@@ -335,10 +329,6 @@ class _HoverPlaylistCardState extends State<_HoverPlaylistCard> {
                   ),
                 ],
               ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/custom_widgets.dart';
+import '../../../core/widgets/app_glass_container.dart';
 import '../../../routes/app_routes.dart';
 import '../controllers/home_controller.dart';
 import '../../songs/models/song_model.dart';
@@ -440,10 +441,9 @@ class HomeTabView extends StatelessWidget {
   }
 
   Widget _buildRecentSongCard(SongModel song) {
-    return Card(
-      margin: EdgeInsets.zero,
-      color: const Color(0xFF1E293B),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return AppGlassContainer(
+      borderRadius: 12,
+      padding: EdgeInsets.zero,
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         onTap: () => Get.toNamed(AppRoutes.songDetail, arguments: song),
@@ -480,7 +480,7 @@ class HomeTabView extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             CustomText(
-              song.singerName ?? 'Unknown Singer',
+              song.singerName ?? 'Unknown Artist',
               fontSize: 12,
               color: Colors.grey[400],
               maxLines: 1,

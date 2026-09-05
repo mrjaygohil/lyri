@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:lyri_web/features/songs/models/song_model.dart';
+import '../../../core/widgets/app_animated_button.dart';
+import '../../../core/widgets/app_glass_container.dart';
 import '../../../core/widgets/custom_widgets.dart';
 import '../../../routes/app_routes.dart';
 import '../controllers/playlists_controller.dart';
 import '../models/playlist_model.dart';
+import '../../songs/models/song_model.dart';
 
 class PlaylistDetailView extends StatefulWidget {
   const PlaylistDetailView({super.key});
@@ -49,12 +51,35 @@ class _PlaylistDetailViewState extends State<PlaylistDetailView> {
               (p) => p.id == initialPlaylist.id,
               orElse: () => initialPlaylist,
             );
-            return IconButton(
-              icon: const Icon(Icons.add_circle_outline, color: Colors.greenAccent),
-              tooltip: 'Add Songs',
-              onPressed: () {
-                Get.toNamed(AppRoutes.search, arguments: {'playlist': playlist});
-              },
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // View Playlist button before Add button
+                AppAnimatedButton(
+                  onTap: () {
+                    Get.toNamed(AppRoutes.playlistLyrics, arguments: {'playlist': playlist});
+                  },
+                  child: IconButton(
+                    icon: const Icon(Icons.visibility_outlined, color: Colors.lightBlueAccent),
+                    tooltip: 'View Playlist',
+                    onPressed: () {
+                      Get.toNamed(AppRoutes.playlistLyrics, arguments: {'playlist': playlist});
+                    },
+                  ),
+                ),
+                AppAnimatedButton(
+                  onTap: () {
+                    Get.toNamed(AppRoutes.search, arguments: {'playlist': playlist});
+                  },
+                  child: IconButton(
+                    icon: const Icon(Icons.add_circle_outline, color: Colors.greenAccent),
+                    tooltip: 'Add Songs',
+                    onPressed: () {
+                      Get.toNamed(AppRoutes.search, arguments: {'playlist': playlist});
+                    },
+                  ),
+                ),
+              ],
             );
           }),
         ],
@@ -100,7 +125,7 @@ class _PlaylistDetailViewState extends State<PlaylistDetailView> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 800),
             child: ReorderableListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
               itemCount: playlist.songs.length,
               onReorder: (oldIndex, newIndex) {
                 if (newIndex > oldIndex) {
@@ -114,11 +139,11 @@ class _PlaylistDetailViewState extends State<PlaylistDetailView> {
               },
               itemBuilder: (context, index) {
                 final song = playlist.songs[index];
-                return Card(
+                return AppGlassContainer(
                   key: ValueKey(song.id),
-                  color: const Color(0xFF1E293B),
+                  borderRadius: 14,
                   margin: const EdgeInsets.only(bottom: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  onTap: () => Get.toNamed(AppRoutes.songDetail, arguments: song),
                   child: ListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                     onTap: () => Get.toNamed(AppRoutes.songDetail, arguments: song),
@@ -164,13 +189,6 @@ class _PlaylistDetailViewState extends State<PlaylistDetailView> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    // trailing: IconButton(
-                    //   padding: EdgeInsets.all(19)
-                    //   icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
-                    //   onPressed: () {
-                    //     controller.removeSongFromPlaylist(playlist.id, song.id);
-                    //   },
-                    // ),
                   ),
                 );
               },
@@ -178,22 +196,43 @@ class _PlaylistDetailViewState extends State<PlaylistDetailView> {
           ),
         );
       }),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          final playlist = controller.playlists.firstWhere(
-            (p) => p.id == initialPlaylist.id,
-            orElse: () => initialPlaylist,
-          );
-          Get.toNamed(AppRoutes.search, arguments: {'playlist': playlist});
-        },
-        backgroundColor: const Color(0xFF6366F1),
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text(
-          'Add Songs',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-      ),
+      floatingActionButton: Obx(() {
+        final playlist = controller.playlists.firstWhere(
+          (p) => p.id == initialPlaylist.id,
+          orElse: () => initialPlaylist,
+        );
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // View button before Add Songs button
+            FloatingActionButton.extended(
+              heroTag: 'view_playlist_btn',
+              onPressed: () {
+                Get.toNamed(AppRoutes.playlistLyrics, arguments: {'playlist': playlist});
+              },
+              backgroundColor: const Color(0xFF38BDF8),
+              icon: const Icon(Icons.visibility, color: Colors.white),
+              label: const Text(
+                'View',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(width: 12),
+            FloatingActionButton.extended(
+              heroTag: 'add_songs_btn',
+              onPressed: () {
+                Get.toNamed(AppRoutes.search, arguments: {'playlist': playlist});
+              },
+              backgroundColor: const Color(0xFF6366F1),
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: const Text(
+                'Add Songs',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      }),
     );
   }
 }
-

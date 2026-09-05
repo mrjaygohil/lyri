@@ -23,6 +23,7 @@ import '../features/home/bindings/home_binding.dart';
 import '../features/home/views/home_layout_view.dart';
 import '../features/playlists/bindings/playlists_binding.dart';
 import '../features/playlists/views/playlist_detail_view.dart';
+import '../features/playlists/views/playlist_lyrics_view.dart';
 import '../features/search/bindings/search_binding.dart';
 import '../features/search/views/search_view.dart';
 
@@ -42,6 +43,7 @@ class AppRoutes {
   static const String songDetail = '/song-detail';
   static const String categorySongs = '/category-songs';
   static const String playlistDetail = '/playlist-detail';
+  static const String playlistLyrics = '/playlist-lyrics';
   static const String search = '/search';
 
   static final List<GetPage> pages = [
@@ -130,6 +132,12 @@ class AppRoutes {
     GetPage(
       name: playlistDetail,
       page: () => const PlaylistDetailView(),
+      binding: PlaylistsBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage(
+      name: playlistLyrics,
+      page: () => const PlaylistLyricsView(),
       binding: PlaylistsBinding(),
       middlewares: [AuthMiddleware()],
     ),
