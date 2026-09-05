@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/constants/supabase_constants.dart';
 import '../../../core/services/supabase_service.dart';
@@ -100,7 +101,25 @@ class AuthRepository {
     }
   }
 
-  // Sign in with Google IdToken
+  // Sign in with Google OAuth (used on Web)
+  Future<bool> signInWithGoogleOAuth() async {
+    try {
+      if (!_supabaseService.isInitialized.value) {
+        throw Exception('Supabase not initialized');
+      }
+      final bool res = await _client.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: kIsWeb ? Uri.base.origin : null,
+      );
+      AppLogger.i('Google OAuth flow launched successfully.');
+      return res;
+    } catch (e, stackTrace) {
+      AppLogger.e('Google OAuth sign-in failed: $e', stackTrace: stackTrace);
+      rethrow;
+    }
+  }
+
+  // Sign in with Google IdToken (used on Mobile)
   Future<User?> signInWithGoogle(String idToken, {String? accessToken}) async {
     try {
       if (!_supabaseService.isInitialized.value) {
@@ -119,3 +138,4 @@ class AuthRepository {
     }
   }
 }
+

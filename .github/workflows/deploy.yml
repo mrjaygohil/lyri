@@ -1,4 +1,4 @@
-name: Deploy Flutter Web to GitHub Pages
+name: Deploy Flutter Web
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: pages
   cancel-in-progress: true
 
 jobs:
@@ -37,17 +37,14 @@ jobs:
       - name: Build Flutter Web
         run: flutter build web --release --base-href "/lyri/"
 
-      - name: Setup GitHub Pages
-        uses: actions/configure-pages@v5
-
       - name: Upload Flutter Web Build
         uses: actions/upload-pages-artifact@v4
         with:
           path: build/web
 
   deploy:
-    runs-on: ubuntu-latest
     needs: build
+    runs-on: ubuntu-latest
 
     environment:
       name: github-pages

@@ -1,6 +1,6 @@
 import 'dart:html' as html;
 import 'dart:js' as js;
-import 'dart:js_util' as js_util;
+import 'dart:async';
 
 Future<bool> checkCameraConnection() async {
   try {
@@ -22,10 +22,19 @@ Future<bool> checkCameraConnection() async {
 
 Future<String?> capturePhotoFromWebcam() async {
   try {
-    final promise = js.context.callMethod('_captureFromWebcam');
-    final result = await js_util.promiseToFuture(promise);
-    return result as String?;
+    final completer = Completer<String?>();
+    final dynamic promise = js.context.callMethod('_captureFromWebcam');
+    if (promise != null && promise is js.JsObject) {
+      promise.callMethod('then', [
+        (dynamic result) => completer.complete(result as String?),
+        (dynamic error) => completer.complete(null),
+      ]);
+      return await completer.future;
+    }
+    return null;
   } catch (e) {
     return null;
   }
 }
+
+

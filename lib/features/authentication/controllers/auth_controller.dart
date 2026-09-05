@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -176,24 +177,30 @@ class AuthController extends GetxController {
 
     try {
       isLoading.value = true;
-      final GoogleSignIn googleSignIn = GoogleSignIn(
-        scopes: ['email', 'profile'],
-      );
-      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-      
-      if (googleUser == null) {
+      if (kIsWeb) {
+        // On Web, use Supabase OAuth redirect flow
+        await _authRepository.signInWithGoogleOAuth();
         isLoading.value = false;
-        return; // User cancelled
+      } else {
+        final GoogleSignIn googleSignIn = GoogleSignIn(
+          scopes: ['email', 'profile'],
+        );
+        final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+        
+        if (googleUser == null) {
+          isLoading.value = false;
+          return; // User cancelled
+        }
+
+        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+        final String? idToken = googleAuth.idToken;
+
+        if (idToken == null) {
+          throw Exception('Google sign-in succeeded but returned no identity token.');
+        }
+
+        await _authRepository.signInWithGoogle(idToken, accessToken: googleAuth.accessToken);
       }
-
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      final String? idToken = googleAuth.idToken;
-
-      if (idToken == null) {
-        throw Exception('Google sign-in succeeded but returned no identity token.');
-      }
-
-      await _authRepository.signInWithGoogle(idToken, accessToken: googleAuth.accessToken);
     } catch (e) {
       isLoading.value = false;
       Get.snackbar(
